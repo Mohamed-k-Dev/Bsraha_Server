@@ -5,6 +5,8 @@ import { emitter } from "../../../Service/sendEmail.service.js";
 import { html } from "../../../Utils/html.utils.js";
 import mailAttachmentsHandler from "../../../Utils/mailAttachments.utils.js";
 import jwt from "jsonwebtoken";
+import { v4 as uuidv4 } from "uuid";
+import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 
 export const signUp = async (req, res) => {
   try {
@@ -94,12 +96,12 @@ export const login = async (req, res) => {
     const accessToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: 20 }
+      { expiresIn: "1h", jwtid: uuidv4() }
     );
     const refreshToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_REFRESH_KEY,
-      { expiresIn: "7d" }
+      { expiresIn: "7d", jwtid: uuidv4() }
     );
 
     res
@@ -141,21 +143,51 @@ export const verifyEmail = async (req, res) => {
 
 export const refreshToken = (req, res) => {
   try {
-    const refreshToken = req.headers.authorization;
-    if (!refreshToken) {
-      return res.status(401).json({ message: "authorization required " });
-    }
+    const { refreshtoken } = req.headers;
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_KEY);
+    const decoded = jwt.verify(refreshtoken, process.env.JWT_REFRESH_KEY);
+    const isTokenBlacklisted = BlackListedTokens.findOne({ tokenId: decoded.jti });
+    if (isTokenBlacklisted) {
+      return res.status(401).json({ message: "Refresh token is blacklisted" });
+    }
+    
     const accessToken = jwt.sign(
       { id: decoded.id, email: decoded.email },
       process.env.JWT_ACCESS_KEY,
-      { expiresIn: 20 }
+      { expiresIn: "1h" }
     );
 
     res.json({ accessToken });
   } catch (error) {
     console.log(`Error in refresh token controller: ${error.message}`);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    const { accesstoken, refreshtoken } = req.headers;
+
+    const decodedAccess = jwt.verify(accesstoken, process.env.JWT_ACCESS_KEY);
+    const decodedRefresh = jwt.verify(
+      refreshtoken,
+      process.env.JWT_REFRESH_KEY
+    );
+
+    await BlackListedTokens.insertMany([
+      {
+        tokenId: decodedAccess.jti,
+        expiredAt: decodedAccess.exp,
+      },
+      {
+        tokenId: decodedRefresh.jti,
+        expiredAt: decodedRefresh.exp,
+      },
+    ]);
+
+    res.status(200).json({ message: "User logout successfully" });
+  } catch (error) {
+    console.log(`Error in logout controller: ${error.message}`);
     res.status(500).json({ message: "Internal server error" });
   }
 };
