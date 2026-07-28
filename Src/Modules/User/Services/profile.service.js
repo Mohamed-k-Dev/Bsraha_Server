@@ -4,20 +4,7 @@ import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 
 export const getProfile = async (req, res) => {
   try {
-    const {accesstoken} = req.headers;
-    if (!accesstoken) {
-      return res.status(401).json({ message: "access token required " });
-    }
-    const decoded = jwt.verify(accesstoken , process.env.JWT_ACCESS_KEY);
-    const isTokenBlacklisted = await BlackListedTokens.findOne({ tokenId: decoded.jti });
-    if (isTokenBlacklisted) {
-      return res.status(401).json({ message: "Access token is blacklisted" });
-    }
-    
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const user = req.authUser;
     res.json({ user });
   } catch (error) {
     if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {

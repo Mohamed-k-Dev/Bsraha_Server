@@ -1,6 +1,6 @@
 import User from "../../../DB/Models/User.model.js";
 import { hashSync, compareSync } from "bcrypt";
-import { decrypt, encrypt } from "../../../Utils/encryption.utils.js";
+import { encrypt } from "../../../Utils/encryption.utils.js";
 import { emitter } from "../../../Service/sendEmail.service.js";
 import { html } from "../../../Utils/html.utils.js";
 import mailAttachmentsHandler from "../../../Utils/mailAttachments.utils.js";
@@ -146,11 +146,13 @@ export const refreshToken = (req, res) => {
     const { refreshtoken } = req.headers;
 
     const decoded = jwt.verify(refreshtoken, process.env.JWT_REFRESH_KEY);
-    const isTokenBlacklisted = BlackListedTokens.findOne({ tokenId: decoded.jti });
+    const isTokenBlacklisted = BlackListedTokens.findOne({
+      tokenId: decoded.jti,
+    });
     if (isTokenBlacklisted) {
       return res.status(401).json({ message: "Refresh token is blacklisted" });
     }
-    
+
     const accessToken = jwt.sign(
       { id: decoded.id, email: decoded.email },
       process.env.JWT_ACCESS_KEY,
@@ -174,6 +176,15 @@ export const logout = async (req, res) => {
       process.env.JWT_REFRESH_KEY
     );
 
+    const isTokenBlacklisted = await BlackListedTokens.find({
+      tokenId: { $in: [decodedAccess.jti, decodedRefresh.jti] },
+    });
+    if (isTokenBlacklisted) {
+      return res
+        .status(401)
+        .json({ message: "Access token or refresh token is blacklisted" });
+    }
+
     await BlackListedTokens.insertMany([
       {
         tokenId: decodedAccess.jti,
@@ -188,6 +199,75 @@ export const logout = async (req, res) => {
     res.status(200).json({ message: "User logout successfully" });
   } catch (error) {
     console.log(`Error in logout controller: ${error.message}`);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const forgetOtp = Math.floor(Math.random() * 1000000).toString();
+    const forgetOtpExpiration = new Date(Date.now() + 10 * 60 * 1000);
+    const hashedForgetOtp = hashSync(forgetOtp, +process.env.SALT);
+
+    user.forgetOtp = hashedForgetOtp;
+    user.forgetOtpExpiration = forgetOtpExpiration;
+    await user.save();
+    emitter.emit("sendMail", {
+      to: email,
+      subject: "Welcome to Sarahah",
+      html: html({
+        userName: user.userName,
+        generatedOtp: forgetOtp,
+        operation: "forget password",
+      }),
+      attachments: [
+        mailAttachmentsHandler("Mohamed_Khaled_Backend.pdf"),
+        mailAttachmentsHandler("Sarahah.md"),
+        mailAttachmentsHandler("bank2.png"),
+      ],
+    });
+
+    res.status(200).json({ message: "Otp sent successfully" });
+  } catch (error) {
+    console.log(`Error in forget password controller: ${error.message}`);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, password, confirmPassword, otp } = req.body;
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.forgetOtpExpiration < Date.now()) {
+      return res.status(404).json({ message: "otp expired" });
+    }
+
+    const isOtpValid = compareSync(otp, user.forgetOtp || "");
+    if (!isOtpValid) {
+      return res.status(404).json({ message: "Invalid otp" });
+    }
+
+    const hashedPassword = hashSync(password, +process.env.SALT);
+    user.password = hashedPassword;
+    user.forgetOtp = undefined;
+    user.forgetOtpExpiration = undefined;
+    await user.save();
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.log(`Error in reset password controller: ${error.message}`);
     res.status(500).json({ message: "Internal server error" });
   }
 };
