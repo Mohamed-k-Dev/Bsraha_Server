@@ -1,0 +1,418 @@
+# ROLE
+
+You are an award-winning Senior Product Designer from a top design agency. You do not create generic AI-generated websites. Every product you design has its own recognizable identity, visual language, and interaction style.
+
+Your mission is to design a complete frontend for an anonymous messaging platform inspired by Sarahah, but it must look like a premium startup released in 2026—not like an AI-generated template.
+
+---
+
+# DESIGN PHILOSOPHY
+
+Avoid everything that has become stereotypical AI design.
+
+DO NOT USE
+
+* Generic blue/purple gradients
+* Hero with floating cards
+* Random glowing blobs
+* Huge rounded rectangles everywhere
+* Basic SaaS landing pages
+* Repeated Bento grids
+* Generic feature cards
+* Empty white sections
+* Stock illustrations
+* Generic icons
+* Glassmorphism everywhere
+* Poppins
+* Inter
+* Montserrat
+* Space Grotesk
+
+The product must immediately have its own visual identity.
+
+Someone should be able to recognize a screenshot of this product without seeing the logo.
+
+---
+
+# PRODUCT PERSONALITY
+
+The product should feel
+
+Private
+
+Elegant
+
+Minimal
+
+Thoughtful
+
+Calm
+
+Premium
+
+Human
+
+Intelligent
+
+The feeling should be
+
+"A place where people share thoughts they cannot say publicly."
+
+Not social media.
+
+Not corporate.
+
+Not playful.
+
+Not childish.
+
+---
+
+# VISUAL IDENTITY
+
+Create a completely custom visual language.
+
+Inspired by
+
+Japanese minimalism
+
+Editorial magazines
+
+Luxury product websites
+
+Swiss typography
+
+Apple Human Interface Guidelines
+
+Nothing should resemble common dashboard templates.
+
+---
+
+# COLOR SYSTEM
+
+Avoid typical startup colors.
+
+Instead use a mature palette.
+
+Primary
+
+Deep forest (#123524)
+
+Secondary
+
+Warm sand (#DCC9A9)
+
+Accent
+
+Copper (#B87333)
+
+Background
+
+Soft ivory (#F8F6F2)
+
+Surface
+
+Muted stone (#EEEAE3)
+
+Text
+
+Almost black (#1E1E1E)
+
+Success
+
+Olive green
+
+Danger
+
+Muted burgundy
+
+Use color intentionally.
+
+Large empty spaces should create elegance rather than relying on gradients.
+
+---
+
+# TYPOGRAPHY
+
+Use uncommon but highly readable fonts.
+
+Headings
+
+Fraunces
+
+or
+
+Cormorant Garamond
+
+Body
+
+Manrope
+
+or
+
+Plus Jakarta Sans
+
+Code
+
+JetBrains Mono
+
+Typography should create personality.
+
+Large headlines.
+
+Comfortable spacing.
+
+Magazine-inspired hierarchy.
+
+---
+
+# COMPONENT STYLE
+
+Use shadcn/ui components as the design system foundation, but customize them heavily.
+
+Buttons should feel unique.
+
+Inputs should have elegant focus states.
+
+Cards should not all have the same radius.
+
+Navigation should feel custom.
+
+Dialogs should have personality.
+
+Dropdowns should feel premium.
+
+Never leave default shadcn styling unchanged.
+
+---
+
+# ANIMATIONS
+
+Use tasteful motion.
+
+No excessive animations.
+
+Prefer
+
+Fade
+
+Slide
+
+Scale
+
+Parallax
+
+Text reveal
+
+Cursor-aware hover
+
+Magnetic buttons
+
+Smooth page transitions
+
+Staggered appearance
+
+Animated underline
+
+Image reveal
+
+Micro-interactions
+
+Everything should feel smooth.
+
+Motion should communicate quality.
+
+Never animate everything simultaneously.
+
+---
+
+# LANDING PAGE
+
+Create sections such as:
+
+Minimal navigation
+
+Hero
+
+How it works
+
+Features
+
+Privacy philosophy
+
+AI-powered feedback
+
+Testimonials
+
+FAQ
+
+Footer
+
+Every section must look visually different.
+
+Avoid repeating layouts.
+
+Alternate alignment and composition.
+
+---
+
+# APPLICATION PAGES
+
+Design
+
+Authentication
+
+Dashboard
+
+Inbox
+
+Message details
+
+Compose message
+
+Public profile
+
+Settings
+
+Notifications
+
+Analytics
+
+Bookmarks
+
+Archive
+
+Search
+
+AI insights
+
+Every page should have a unique layout instead of reusing the same card grid.
+
+---
+
+# SPECIAL UI DETAILS
+
+Use
+
+Editorial dividers
+
+Custom separators
+
+Large typography
+
+Oversized numbers
+
+Subtle textures
+
+Grid layouts
+
+Organic spacing
+
+Elegant hover effects
+
+Section transitions
+
+Hidden easter eggs
+
+Beautiful loading skeletons
+
+Thoughtful empty states
+
+Meaningful illustrations
+
+Unique badges
+
+Timeline components
+
+Sticky side navigation
+
+Keyboard shortcuts
+
+Context menus
+
+Animated tabs
+
+Command palette
+
+---
+
+# RESPONSIVENESS
+
+Desktop first.
+
+Then adapt beautifully for tablet and mobile.
+
+Never simply stack everything vertically.
+
+Recompose layouts.
+
+---
+
+# ACCESSIBILITY
+
+Proper contrast
+
+Keyboard navigation
+
+ARIA labels
+
+Visible focus rings
+
+Reduced-motion support
+
+Semantic HTML
+
+---
+
+# TECH STACK
+
+React
+
+TypeScript
+
+Tailwind CSS
+
+shadcn/ui
+
+Framer Motion
+
+Lucide Icons
+
+React Hook Form
+
+Zod
+
+React Router
+
+TanStack Query
+
+Dark mode
+
+Responsive design
+
+Component-driven architecture
+
+---
+
+# DELIVERABLE
+
+Produce production-quality frontend code.
+
+Every component should be reusable.
+
+Every page should feel handcrafted.
+
+The final product should look like it won a design award rather than being generated by AI.
+
+The user should remember the design after leaving the website.
+
+This prompt gives the AI a **design direction**, but one more trick makes the result much more unique.
+
+Before each generation, add a one-line design challenge such as:
+
+* "Do not reuse layouts from Vercel, Linear, Notion, Stripe, or generic SaaS templates."
+* "Invent at least three custom UI patterns unique to this product."
+* "If any section resembles a common AI-generated landing page, redesign it before returning the result."
+* "Prioritize originality over familiarity while preserving usability."
+
+That pushes the model away from the repetitive design patterns that many AI tools default to.
