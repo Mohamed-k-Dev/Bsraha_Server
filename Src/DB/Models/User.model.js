@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { SYSTEM_RULES } from "../../Constants/Constants.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -51,8 +52,8 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      enum: Object.values(SYSTEM_RULES),
+      default: SYSTEM_RULES.USER,
     },
     isVerified: {
       type: Boolean,
@@ -66,7 +67,7 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    otp : String,
+    otp: String,
     otpExpiration: Date,
     forgetOtp: String,
     forgetOtpExpiration: Date,

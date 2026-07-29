@@ -25,7 +25,6 @@ export const authenticationMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(accesstoken, process.env.JWT_ACCESS_KEY);
-    console.log(decoded);
     const isTokenBlacklisted = await BlackListedTokens.findOne({
       tokenId: decoded.jti,
     });

@@ -94,12 +94,12 @@ export const login = async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_ACCESS_KEY,
       { expiresIn: "1h", jwtid: uuidv4() }
     );
     const refreshToken = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_REFRESH_KEY,
       { expiresIn: "7d", jwtid: uuidv4() }
     );
@@ -154,7 +154,7 @@ export const refreshToken = (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: decoded.id, email: decoded.email },
+      { id: decoded.id, email: decoded.email, role: decoded.role },
       process.env.JWT_ACCESS_KEY,
       { expiresIn: "1h" }
     );
