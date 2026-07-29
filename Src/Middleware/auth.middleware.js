@@ -25,6 +25,7 @@ export const authenticationMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(accesstoken, process.env.JWT_ACCESS_KEY);
+    console.log(decoded);
     const isTokenBlacklisted = await BlackListedTokens.findOne({
       tokenId: decoded.jti,
     });
@@ -37,16 +38,17 @@ export const authenticationMiddleware = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.phone =
-      user.phone &&
-      JSON.parse(
-        decrypt({
-          cipherText: user.phone,
-          secretKey: process.env.PHONE_SECRET_KEY,
-        })
-      );
+    // user.phone =
+    //   user.phone &&
+    //   JSON.parse(
+    //     decrypt({
+    //       cipherText: user.phone,
+    //       secretKey: process.env.PHONE_SECRET_KEY,
+    //     })
+    //   );
 
     req.authUser = user;
+    req.authUser.token = { tokenId: decoded.jti, expiredAt: decoded.exp };
     next();
   } catch (error) {
     if (error.name == "TokenExpiredError") {
