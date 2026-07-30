@@ -1,15 +1,16 @@
 import User from "../../../DB/Models/User.model.js";
 import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 import { compareSync, hashSync } from "bcrypt";
+import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 
 export const listUsers = async (req, res) => {
   const users = await User.find({});
-  res.json({ users });
+  sendSuccessResponse({ res, data: { users } });
 };
 
 export const getProfile = async (req, res, next) => {
   const user = req.authUser;
-  res.json({ user });
+  sendSuccessResponse({ res, data: { user } });
 };
 
 export const updatePassword = async (req, res, next) => {
@@ -33,7 +34,7 @@ export const updatePassword = async (req, res, next) => {
     tokenId: req.authUser.token.tokenId,
     expiredAt: req.authUser.token.expiredAt,
   });
-  res.json({ message: "Password updated successfully" });
+  sendSuccessResponse({ res, message: "Password updated successfully" });
 };
 
 export const updateProfile = async (req, res) => {
@@ -56,5 +57,9 @@ export const updateProfile = async (req, res) => {
     }
   );
 
-  res.json({ message: "Profile updated successfully", user: updatedUser });
+  sendSuccessResponse({
+    res,
+    message: "Profile updated successfully",
+    data: { user: updatedUser },
+  });
 };
