@@ -10,38 +10,31 @@ import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 
 export const signUp = async (req, res, next) => {
-  const {
-    userName,
-    email,
-    password,
-    gender,
-    phone,
-    address,
-    age,
-    bio,
-    birthDate,
-    imageUrl,
-  } = req.body;
+  const data = req.body;
 
-  const isUserExist = await User.findOne({ email });
+  const isUserExist = await User.findOne({ email: data.email });
   if (isUserExist) {
     return next(new Error("User already exist", { cause: 409 }));
   }
 
-  const hashedPassword = hashSync(password, +process.env.SALT);
+  const hashedPassword = hashSync(data.password, +process.env.SALT);
   const encryptedPhone =
-    phone &&
+    data.phone &&
     encrypt({
-      plainText: phone,
+      plainText: data.phone,
       secretKey: process.env.PHONE_SECRET_KEY,
     });
 
   const generatedOtp = Math.floor(Math.random() * 1000000).toString();
   const otpExpiration = new Date(Date.now() + 10 * 60 * 1000);
   emitter.emit("sendMail", {
-    to: email,
+    to: data.email,
     subject: "Welcome to Sarahah",
-    html: html({ userName, generatedOtp, operation: "verify your account" }),
+    html: html({
+      userName: data.userName,
+      generatedOtp,
+      operation: "verify your account",
+    }),
     attachments: [
       mailAttachmentsHandler("Mohamed_Khaled_Backend.pdf"),
       mailAttachmentsHandler("Sarahah.md"),
@@ -50,16 +43,9 @@ export const signUp = async (req, res, next) => {
   });
 
   const user = await User.create({
-    userName,
-    email,
+    ...data,
     password: hashedPassword,
-    gender,
     phone: encryptedPhone,
-    address,
-    age,
-    bio,
-    birthDate,
-    imageUrl,
     otp: generatedOtp,
     otpExpiration,
   });
