@@ -82,6 +82,8 @@ export const signUpSchema = {
       .messages({
         "any.only": "Role must be 'user', 'admin', or 'super-admin'",
       }),
+  }).messages({
+    "object.unknown": "Unknown field: {{#label}}",
   }),
 };
 export const loginSchema = {
@@ -117,7 +119,7 @@ export const loginSchema = {
         "string.pattern.base":
           "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
       }),
-  }),
+  })
 };
 export const verifyEmailSchema = {
   body: Joi.object({
@@ -148,13 +150,85 @@ export const verifyEmailSchema = {
       }),
   }),
 };
-
-export const refreshTokenSchema = {
-  headers: Joi.object({
-    refreshToken: Joi.string().required().messages({
-      "any.required": "Refresh token is required",
-      "string.empty": "Refresh token is required",
-      "string.base": "Refresh token must be a string",
+export const forgetPasswordSchema = {
+  body: Joi.object({
+    email: Joi.string()
+      .required()
+      .email({
+        tlds: {
+          allow: ["com", "net", "org", "edu", "gov", "mil", "io", "co"],
+        },
+        maxDomainSegments: 2,
+      })
+      .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+      .messages({
+        "string.email": "Please fill a valid email address",
+        "any.required": "Email is required",
+        "string.empty": "Email is required",
+        "string.base": "Email must be a string",
+      }),
+  }),
+};
+export const resetPasswordSchema = {
+  body: Joi.object({
+    email: Joi.string()
+      .required()
+      .email({
+        tlds: {
+          allow: ["com", "net", "org", "edu", "gov", "mil", "io", "co"],
+        },
+        maxDomainSegments: 2,
+      })
+      .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+      .messages({
+        "string.email": "Please fill a valid email address",
+        "any.required": "Email is required",
+        "string.empty": "Email is required",
+        "string.base": "Email must be a string",
+      }),
+    password: Joi.string()
+      .required()
+      .min(8)
+      .max(100)
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+      )
+      .messages({
+        "string.min": "Password must be at least 8 characters long",
+        "string.max": "Password must be at most 100 characters long",
+        "any.required": "Password is required",
+        "string.empty": "Password is required",
+        "string.base": "Password must be a string",
+        "string.pattern.base":
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+      }),
+    confirmPassword: Joi.string()
+      .required()
+      .valid(Joi.ref("password"))
+      .messages({
+        "any.only": "Password and confirm password must match",
+        "any.required": "Confirm password is required",
+        "string.empty": "Confirm password is required",
+        "string.base": "Confirm password must be a string",
+      }),
+    otp: Joi.string()
+      .required()
+      .regex(/^[0-9]{6}$/)
+      .messages({
+        "string.length": "OTP must be 6 digits",
+        "string.pattern.base": "OTP must be a 6-digit number",
+        "any.required": "OTP is required",
+        "string.empty": "OTP is required",
+        "string.base": "OTP must be a string",
+      }),
+  }),
+};
+export const googleSchema = {
+  body: Joi.object({
+    idToken: Joi.string().required().messages({
+      "any.required": "ID token is required",
+      "string.empty": "ID token is required",
+      "string.base": "ID token must be a string",
     }),
   }),
 };

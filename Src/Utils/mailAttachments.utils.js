@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "node:fs";
 
-export default function mailAttachmentsHandler(fileName) {
+export function mailAttachmentsHandler(fileName) {
   return {
     filename: fileName,
     content: fs

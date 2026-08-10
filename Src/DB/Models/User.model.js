@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { SYSTEM_RULES } from "../../Constants/Constants.js";
+import { SYSTEM_PROVIDERS, SYSTEM_RULES } from "../../Constants/Constants.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      // required: [true, "Email is required"],
+      required: [true, "Email is required"],
       unique: [true, "Email already exists"],
       trim: true,
       match: [
@@ -72,6 +72,11 @@ const UserSchema = new mongoose.Schema(
     otpExpiration: Date,
     forgetOtp: String,
     forgetOtpExpiration: Date,
+    provider: {
+      type: String,
+      default: SYSTEM_PROVIDERS.SYSTEM,
+      enum: Object.values(SYSTEM_PROVIDERS),
+    },
   },
   { timestamps: true }
 );

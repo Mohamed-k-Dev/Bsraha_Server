@@ -1,23 +1,32 @@
 import User from "../../../DB/Models/User.model.js";
-import { hashSync, compareSync } from "bcrypt";
 import { encrypt } from "../../../Utils/encryption.utils.js";
 import { emitter } from "../../../Service/sendEmail.service.js";
 import { html } from "../../../Utils/html.utils.js";
-import mailAttachmentsHandler from "../../../Utils/mailAttachments.utils.js";
-import jwt from "jsonwebtoken";
+import { mailAttachmentsHandler } from "../../../Utils/mailAttachments.utils.js";
 import { v4 as uuidv4 } from "uuid";
 import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import { OAuth2Client } from "google-auth-library";
+import { SYSTEM_PROVIDERS } from "../../../Constants/Constants.js";
+import { findUserByEmail } from "../../../Utils/findUser.js";
+import { compare, hash } from "../../../Utils/hash.js";
+import { generateOtp } from "../../../Utils/otp.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+} from "../../../Utils/token.js";
 
 export const signUp = async (req, res, next) => {
   const data = req.body;
 
-  const isUserExist = await User.findOne({ email: data.email });
+  const isUserExist = await findUserByEmail(data.email);
   if (isUserExist) {
     return next(new Error("User already exist", { cause: 409 }));
   }
 
-  const hashedPassword = hashSync(data.password, +process.env.SALT);
+  const hashedPassword = await hash(data.password);
   const encryptedPhone =
     data.phone &&
     encrypt({
@@ -25,14 +34,13 @@ export const signUp = async (req, res, next) => {
       secretKey: process.env.PHONE_SECRET_KEY,
     });
 
-  const generatedOtp = Math.floor(Math.random() * 1000000).toString();
-  const otpExpiration = new Date(Date.now() + 10 * 60 * 1000);
+  const { otp, otpExpiration, hashedOtp } = await generateOtp();
   emitter.emit("sendMail", {
     to: data.email,
     subject: "Welcome to Sarahah",
     html: html({
       userName: data.userName,
-      generatedOtp,
+      otp,
       operation: "verify your account",
     }),
     attachments: [
@@ -42,11 +50,11 @@ export const signUp = async (req, res, next) => {
     ],
   });
 
-  const user = await User.create({
+  await User.create({
     ...data,
     password: hashedPassword,
     phone: encryptedPhone,
-    otp: generatedOtp,
+    otp: hashedOtp,
     otpExpiration,
   });
   sendSuccessResponse({
@@ -59,12 +67,12 @@ export const signUp = async (req, res, next) => {
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return next(new Error("in-correct email or password", { cause: 404 }));
   }
 
-  const isPasswordMatch = compareSync(password, user.password);
+  const isPasswordMatch = await compare(password, user.password);
   if (!isPasswordMatch) {
     return next(new Error("in-correct email or password", { cause: 404 }));
   }
@@ -73,17 +81,87 @@ export const login = async (req, res, next) => {
     return next(new Error("Please verify your email", { cause: 403 }));
   }
 
-  const accessToken = jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_ACCESS_KEY,
-    { expiresIn: "1h", jwtid: uuidv4() }
-  );
-  const refreshToken = jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_REFRESH_KEY,
-    { expiresIn: "7d", jwtid: uuidv4() }
-  );
+  const accessToken = await generateAccessToken({
+    data: { id: user._id, email: user.email, role: user.role },
+  });
+  const refreshToken = await generateRefreshToken({
+    data: { id: user._id, email: user.email, role: user.role },
+  });
 
+  sendSuccessResponse({
+    res,
+    message: "User logged in successfully",
+    data: { accessToken, refreshToken },
+  });
+};
+
+export const signUpWithGmail = async (req, res, next) => {
+  const { idToken } = req.body;
+  const client = new OAuth2Client();
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience: process.env.CLIENT_ID,
+  });
+  const { email_verified, email, name } = ticket.getPayload();
+
+  if (!email_verified) {
+    return next(new Error("Please verify your gmail account", { cause: 403 }));
+  }
+
+  const isUserExist = await findUserByEmail(email);
+  if (isUserExist) {
+    return next(new Error("User already exist", { cause: 409 }));
+  }
+
+  const payload = await User.create({
+    email,
+    userName: name,
+    provider: SYSTEM_PROVIDERS.GOOGLE,
+    isVerified: true,
+    password: await hash(uuidv4(), +process.env.SALT),
+  });
+
+  const accessToken = await generateAccessToken({
+    data: { id: payload._id, email: payload.email, role: payload.role },
+  });
+  sendSuccessResponse({
+    res,
+    message: "User created successfully",
+    data: { accessToken },
+  });
+};
+
+export const signInWithGmail = async (req, res, next) => {
+  const { idToken } = req.body;
+  const client = new OAuth2Client();
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience: process.env.CLIENT_ID,
+  });
+  const payload = ticket.getPayload();
+
+  if (!payload.email_verified) {
+    return next(new Error("Please verify your gmail account", { cause: 403 }));
+  }
+
+  const user = await User.findOne({
+    email: payload.email,
+    provider: SYSTEM_PROVIDERS.GOOGLE,
+  });
+  if (!user) {
+    return next(
+      new Error("User not found, please sign up using google first", {
+        cause: 404,
+      })
+    );
+  }
+
+  const accessToken = await generateAccessToken({
+    data: { id: user._id, email: user.email, role: user.role },
+  });
+  const refreshToken = await generateRefreshToken({
+    data: { id: user._id, email: user.email, role: user.role },
+  });
   sendSuccessResponse({
     res,
     message: "User logged in successfully",
@@ -94,22 +172,23 @@ export const login = async (req, res, next) => {
 export const verifyEmail = async (req, res, next) => {
   const { email, otp } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  if (user.otp !== otp) {
+  const isOtpValid = await compare(otp, user.otp || "");
+  if (!isOtpValid) {
     return next(new Error("in-correct otp"));
   }
   if (user.otpExpiration < Date.now()) {
     return next(new Error("otp expired"));
   }
 
-  user.isVerified = true;
-  user.otp = undefined;
-  user.otpExpiration = undefined;
-  await user.save();
+  await User.findOneAndUpdate(
+    { email },
+    { isVerified: true, $unset: { otp: "", otpExpiration: "" } }
+  );
 
   sendSuccessResponse({
     res,
@@ -119,8 +198,11 @@ export const verifyEmail = async (req, res, next) => {
 
 export const refreshToken = async (req, res, next) => {
   const { refreshtoken } = req.headers;
+  if (!refreshtoken) {
+    return next(new Error("Please provide refresh token", { cause: 400 }));
+  }
 
-  const decoded = jwt.verify(refreshtoken, process.env.JWT_REFRESH_KEY);
+  const decoded = await verifyRefreshToken(refreshtoken);
   const isTokenBlacklisted = await BlackListedTokens.findOne({
     tokenId: decoded.jti,
   });
@@ -128,11 +210,9 @@ export const refreshToken = async (req, res, next) => {
     return next(new Error("Token is blacklisted", { cause: 409 }));
   }
 
-  const accessToken = jwt.sign(
-    { id: decoded.id, email: decoded.email, role: decoded.role },
-    process.env.JWT_ACCESS_KEY,
-    { expiresIn: "1h", jwtid: uuidv4() }
-  );
+  const accessToken = await generateAccessToken({
+    data: { id: decoded.id, email: decoded.email, role: decoded.role },
+  });
 
   sendSuccessResponse({
     res,
@@ -142,9 +222,14 @@ export const refreshToken = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   const { accesstoken, refreshtoken } = req.headers;
+  if (!accesstoken || !refreshtoken) {
+    return next(
+      new Error("Please provide access and refresh token", { cause: 400 })
+    );
+  }
 
-  const decodedAccess = jwt.verify(accesstoken, process.env.JWT_ACCESS_KEY);
-  const decodedRefresh = jwt.verify(refreshtoken, process.env.JWT_REFRESH_KEY);
+  const decodedAccess = await verifyAccessToken(accesstoken);
+  const decodedRefresh = await verifyRefreshToken(refreshtoken);
 
   const isTokenBlacklisted = await BlackListedTokens.findOne({
     tokenId: { $in: [decodedAccess.jti, decodedRefresh.jti] },
@@ -172,25 +257,27 @@ export const logout = async (req, res, next) => {
 
 export const forgetPassword = async (req, res, next) => {
   const { email } = req.body;
-  const user = await User.findOne({ email });
-
+  const user = await findUserByEmail(email);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  const forgetOtp = Math.floor(Math.random() * 1000000).toString();
-  const forgetOtpExpiration = new Date(Date.now() + 10 * 60 * 1000);
-  const hashedForgetOtp = hashSync(forgetOtp, +process.env.SALT);
+  const {
+    otp: forgetOtp,
+    otpExpiration: forgetOtpExpiration,
+    hashedOtp: hashedForgetOtp,
+  } = await generateOtp();
 
-  user.forgetOtp = hashedForgetOtp;
-  user.forgetOtpExpiration = forgetOtpExpiration;
-  await user.save();
+  await User.findOneAndUpdate(
+    { email },
+    { forgetOtp: hashedForgetOtp, forgetOtpExpiration }
+  );
   emitter.emit("sendMail", {
     to: email,
     subject: "Welcome to Sarahah",
     html: html({
       userName: user.userName,
-      generatedOtp: forgetOtp,
+      otp: forgetOtp,
       operation: "forget password",
     }),
     attachments: [
@@ -207,36 +294,33 @@ export const forgetPassword = async (req, res, next) => {
 };
 
 export const resetPassword = async (req, res, next) => {
-  const { email, password, confirmPassword, otp } = req.body;
-  if (password !== confirmPassword) {
-    return next(new Error("Passwords do not match"));
-  }
-  if (email !== req.authUser.email) {
-    return next(new Error("in-correct login email"));
-  }
-  const user = await User.findOne({ email });
+  const { email, password, otp } = req.body;
+  const user = await findUserByEmail(email);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
+  }
+  const isOtpValid = await compare(otp, user.forgetOtp || "");
+  if (!isOtpValid) {
+    return next(new Error("in-correct otp"));
   }
   if (user.forgetOtpExpiration < Date.now()) {
     return next(new Error("Otp expired"));
   }
 
-  const isOtpValid = compareSync(otp, user.forgetOtp || "");
-  if (!isOtpValid) {
-    return next(new Error("in-correct otp"));
-  }
-
-  const hashedPassword = hashSync(password, +process.env.SALT);
-  user.password = hashedPassword;
-  user.forgetOtp = undefined;
-  user.forgetOtpExpiration = undefined;
-  await user.save();
+  const hashedPassword = await hash(password);
+  await User.findOneAndUpdate(
+    { email },
+    {
+      password: hashedPassword,
+      $unset: { forgetOtp: "", forgetOtpExpiration: "" },
+    }
+  );
   sendSuccessResponse({
     res,
     message: "Password updated successfully",
   });
 };
 
-// 274
-// 253
+
+
+

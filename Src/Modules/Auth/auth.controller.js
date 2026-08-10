@@ -7,13 +7,16 @@ import {
   resetPassword,
   signUp,
   verifyEmail,
+  signInWithGmail,
+  signUpWithGmail,
 } from "./Services/auth.service.js";
 import { errorHandler } from "../../Middleware/errorHandler.middleware.js";
-import { authenticationMiddleware } from "../../Middleware/auth.middleware.js";
 import { validationMiddleware } from "../../Middleware/validation.middleware.js";
 import {
+  forgetPasswordSchema,
+  googleSchema,
   loginSchema,
-  refreshTokenSchema,
+  resetPasswordSchema,
   signUpSchema,
   verifyEmailSchema,
 } from "../../validators/auth.schema.js";
@@ -25,25 +28,43 @@ authRouter.post(
   validationMiddleware(signUpSchema),
   errorHandler(signUp)
 );
+
 authRouter.post(
   "/login",
   validationMiddleware(loginSchema),
   errorHandler(login)
 );
+
+authRouter.post(
+  "/google/signup",
+  validationMiddleware(googleSchema),
+  errorHandler(signUpWithGmail)
+);
+
+authRouter.post(
+  "/google/login",
+  validationMiddleware(googleSchema),
+  errorHandler(signInWithGmail)
+);
+
 authRouter.post(
   "/verify-email",
   validationMiddleware(verifyEmailSchema),
   errorHandler(verifyEmail)
 );
-authRouter.post(
-  "/refresh-token",
-  validationMiddleware(refreshTokenSchema),
-  errorHandler(refreshToken)
-);
+
+authRouter.post("/refresh-token", errorHandler(refreshToken));
+
 authRouter.post("/logout", errorHandler(logout));
-authRouter.patch("/forget-password", errorHandler(forgetPassword));
+
+authRouter.patch(
+  "/forget-password",
+  validationMiddleware(forgetPasswordSchema),
+  errorHandler(forgetPassword)
+);
+
 authRouter.patch(
   "/reset-password",
-  authenticationMiddleware,
+  validationMiddleware(resetPasswordSchema),
   errorHandler(resetPassword)
 );

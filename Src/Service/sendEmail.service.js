@@ -40,7 +40,7 @@ export const emitter = new EventEmitter();
 async function sendMail({ to, subject, html, attachments = [] } = {}) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { data, error } = await resend.emails.send({
-    from: `Sarahah <${process.env.RESEND_USER}>`,
+    from: `Sarahah , No Reply <${process.env.RESEND_USER}>`,
     to,
     subject,
     html,

@@ -1,7 +1,6 @@
 export const errorHandler = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch((err) => {
-      console.log(`Error middleware: ${err.message}`);
       return next(new Error(err, { cause: 500 }));
     });
   };
@@ -12,6 +11,7 @@ export const globalErrorHandler = (err, req, res, next) => {
   res.status(err.cause || 400).json({
     success: false,
     message: err.message || "Internal server error from global error handler",
+    errors: err.errors || [],
     stack: err.stack,
   });
 };

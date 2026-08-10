@@ -1,4 +1,4 @@
-export const html = ({ userName, generatedOtp, operation } = {}) => {
+export const html = ({ userName, otp, operation } = {}) => {
   return `
   <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
@@ -243,7 +243,7 @@ export const html = ({ userName, generatedOtp, operation } = {}) => {
                                                         ><!--[if mso]><i style="mso-font-width:466.6666666666667%;mso-text-raise:24px" hidden>&#8202;&#8202;&#8202;</i><![endif]--></span
                                                       ><span
                                                         style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:12px"
-                                                        >${generatedOtp}</span
+                                                        >${otp}</span
                                                       ><span
                                                         ><!--[if mso]><i style="mso-font-width:466.6666666666667%" hidden>&#8202;&#8202;&#8202;&#8203;</i><![endif]--></span
                                                       ></div
@@ -496,7 +496,7 @@ export const html = ({ userName, generatedOtp, operation } = {}) => {
   //                       <tr>
   //                         <td align="center" style="background-color:#123524; border-radius:2px;">
   //                           <div href="https://undertow.to/inbox" target="_blank" style="display:inline-block; padding:15px 36px; font-family:Arial,Helvetica,sans-serif; font-size:15px; font-weight:700; color:#F8F6F2; text-decoration:none; letter-spacing:0.2px;">
-  //                             ${generatedOtp}
+  //                             ${otp}
   //                           </div>
   //                         </td>
   //                       </tr>
