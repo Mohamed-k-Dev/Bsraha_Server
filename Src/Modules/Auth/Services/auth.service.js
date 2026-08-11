@@ -9,7 +9,7 @@ import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 import { OAuth2Client } from "google-auth-library";
 import { SYSTEM_PROVIDERS } from "../../../Constants/Constants.js";
 import { findUserByEmail } from "../../../Utils/findUser.js";
-import { compare, hash } from "../../../Utils/hash.js";
+import { compareHashedData, hashData } from "../../../Utils/hash.js";
 import { generateOtp } from "../../../Utils/otp.js";
 import {
   generateAccessToken,
@@ -26,7 +26,7 @@ export const signUp = async (req, res, next) => {
     return next(new Error("User already exist", { cause: 409 }));
   }
 
-  const hashedPassword = await hash(data.password);
+  const hashedPassword = await hashData(data.password);
   const encryptedPhone =
     data.phone &&
     encrypt({
@@ -72,7 +72,7 @@ export const login = async (req, res, next) => {
     return next(new Error("in-correct email or password", { cause: 404 }));
   }
 
-  const isPasswordMatch = await compare(password, user.password);
+  const isPasswordMatch = await compareHashedData(password, user.password);
   if (!isPasswordMatch) {
     return next(new Error("in-correct email or password", { cause: 404 }));
   }
@@ -118,7 +118,7 @@ export const signUpWithGmail = async (req, res, next) => {
     userName: name,
     provider: SYSTEM_PROVIDERS.GOOGLE,
     isVerified: true,
-    password: await hash(uuidv4(), +process.env.SALT),
+    password: await hashData(uuidv4(), +process.env.SALT),
   });
 
   const accessToken = await generateAccessToken({
@@ -177,7 +177,7 @@ export const verifyEmail = async (req, res, next) => {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  const isOtpValid = await compare(otp, user.otp || "");
+  const isOtpValid = await compareHashedData(otp, user.otp || "");
   if (!isOtpValid) {
     return next(new Error("in-correct otp"));
   }
@@ -299,7 +299,7 @@ export const resetPassword = async (req, res, next) => {
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
-  const isOtpValid = await compare(otp, user.forgetOtp || "");
+  const isOtpValid = await compareHashedData(otp, user.forgetOtp || "");
   if (!isOtpValid) {
     return next(new Error("in-correct otp"));
   }
@@ -307,7 +307,7 @@ export const resetPassword = async (req, res, next) => {
     return next(new Error("Otp expired"));
   }
 
-  const hashedPassword = await hash(password);
+  const hashedPassword = await hashData(password);
   await User.findOneAndUpdate(
     { email },
     {

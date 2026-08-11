@@ -1,9 +1,9 @@
-import { compareSync, hashSync } from "bcrypt";
+import { compare, hash } from "bcrypt";
 
-export async function hash(data, salt = +process.env.SALT) {
-  return hashSync(data, salt);
+export async function hashData(data, salt = +process.env.SALT) {
+  return hash(data, salt);
 }
 
-export async function compare(data, hashedData) {
-  return compareSync(data.toString(), hashedData);
+export async function compareHashedData(data, hashedData) {
+  return compare(data.toString(), hashedData);
 }

@@ -63,3 +63,10 @@ export const updateProfile = async (req, res) => {
     data: { user: updatedUser },
   });
 };
+export const uploadProfileImage = async (req, res) => {
+  const files = req.files;
+  res.json({
+    message: "Profile image uploaded successfully",
+    data: { files },
+  });
+};

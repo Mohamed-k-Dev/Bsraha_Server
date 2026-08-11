@@ -1,12 +1,9 @@
 import express from "express";
 import path from "path";
 import { config } from "dotenv";
-import cors from "cors";
 
 import { connectDB } from "./DB/connection.js";
-import { authRouter } from "./Modules/Auth/auth.controller.js";
-import { userRouter } from "./Modules/User/profile.controller.js";
-import { globalErrorHandler } from "./Middleware/errorHandler.middleware.js";
+import routerHandler from "./Utils/routerHandler.utils.js";
 
 config({ path: path.resolve("Src/Config/.dev.env") });
 
@@ -33,11 +30,7 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "refreshToken"],
 };
 
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/user", userRouter);
-app.use(globalErrorHandler);
+routerHandler(app, express, corsOptions);
 
 export default function bootstrapFunction() {
   connectDB();
