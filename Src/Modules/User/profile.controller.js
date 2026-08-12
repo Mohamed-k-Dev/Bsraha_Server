@@ -9,6 +9,7 @@ import {
   updateProfile,
   listUsers,
   uploadProfileImage,
+  uploadProfileImages,
 } from "./Services/profile.service.js";
 import {
   ALLOWED_IMAGE_TYPES,
@@ -37,17 +38,18 @@ userRouter.patch(
   authenticationMiddleware,
   errorHandler(updateProfile)
 );
-userRouter.post(
-  "/image",
+userRouter.patch(
+  "/upload/profile-image",
+  authenticationMiddleware,
   Multer("users/profileImages", ALLOWED_IMAGE_TYPES).single("profileImage"),
   errorHandler(uploadProfileImage)
 );
 
-userRouter.post(
-  "/images",
+userRouter.patch(
+  "/upload/coverImages",
+  authenticationMiddleware,
   Multer("users/images", ALLOWED_IMAGE_TYPES).fields([
-    { name: "profileImage", maxCount: 1 },
-    { name: "coverImage", maxCount:  3},
+    { name: "coverImages", maxCount: 3 },
   ]),
-  errorHandler(uploadProfileImage)
+  errorHandler(uploadProfileImages)
 );

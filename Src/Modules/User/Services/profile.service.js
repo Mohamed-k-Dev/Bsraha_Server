@@ -63,10 +63,35 @@ export const updateProfile = async (req, res) => {
     data: { user: updatedUser },
   });
 };
+
 export const uploadProfileImage = async (req, res) => {
-  const files = req.files;
+  const user = req.authUser;
+  const file = req.file;
+  const imageUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/Assets/users/profileImages/${file.filename}`;
+
+  await User.findByIdAndUpdate(user._id, { imageUrl }, { new: true });
   res.json({
     message: "Profile image uploaded successfully",
-    data: { files },
+    data: { user },
   });
 };
+
+export const uploadProfileImages = async (req, res) => {
+  const user = req.authUser;
+  const {coverImages} = req.files;
+  const coverImageUrls = coverImages.map(
+    (file) =>
+      `${req.protocol}://${req.get("host")}/Assets/users/images/${
+        file.filename
+      }`
+  );
+  console.log(coverImageUrls);
+  await User.findByIdAndUpdate(user._id, { coverImageUrls }, { new: true });
+  res.json({
+    message: "cover images uploaded successfully",
+    data: { user },
+  });
+};
+

@@ -45,6 +45,7 @@ const UserSchema = new mongoose.Schema(
     },
     phone: String,
     imageUrl: String,
+    coverImageUrls: [String],
     address: String,
     bio: String,
     birthDate: {
