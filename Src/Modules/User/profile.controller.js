@@ -38,17 +38,20 @@ userRouter.patch(
   authenticationMiddleware,
   errorHandler(updateProfile)
 );
+
+
+
 userRouter.patch(
   "/upload/profile-image",
   authenticationMiddleware,
-  Multer("users/profileImages", ALLOWED_IMAGE_TYPES).single("profileImage"),
+  Multer(ALLOWED_IMAGE_TYPES).single("profileImage"),
   errorHandler(uploadProfileImage)
 );
 
 userRouter.patch(
   "/upload/coverImages",
   authenticationMiddleware,
-  Multer("users/images", ALLOWED_IMAGE_TYPES).fields([
+  Multer(ALLOWED_IMAGE_TYPES).fields([
     { name: "coverImages", maxCount: 3 },
   ]),
   errorHandler(uploadProfileImages)

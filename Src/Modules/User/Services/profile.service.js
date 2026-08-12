@@ -2,6 +2,10 @@ import User from "../../../DB/Models/User.model.js";
 import BlackListedTokens from "../../../DB/Models/blackListedTokens.model.js";
 import { compareSync, hashSync } from "bcrypt";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import uploadImage, {
+  deleteMultipleUploadedImages,
+  deleteUploadedImage,
+} from "../../../Service/cloudinary.service.js";
 
 export const listUsers = async (req, res) => {
   const users = await User.find({});
@@ -67,31 +71,57 @@ export const updateProfile = async (req, res) => {
 export const uploadProfileImage = async (req, res) => {
   const user = req.authUser;
   const file = req.file;
-  const imageUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/Assets/users/profileImages/${file.filename}`;
 
-  await User.findByIdAndUpdate(user._id, { imageUrl }, { new: true });
+  const hasImage = user.image && user.image.public_id;
+  if (hasImage) {
+    await deleteUploadedImage(user.image.public_id);
+  }
+  const cloudinary = await uploadImage({
+    filePath: file.path,
+    options: {
+      folder: process.env.CLOUDINARY_PROFILE_FOLDER,
+    },
+  });
+
+  const updatedUser = await User.findByIdAndUpdate(
+    user._id,
+    { image: { url: cloudinary.secure_url, public_id: cloudinary.public_id } },
+    { new: true }
+  );
   res.json({
     message: "Profile image uploaded successfully",
-    data: { user },
+    data: updatedUser,
   });
 };
 
 export const uploadProfileImages = async (req, res) => {
   const user = req.authUser;
-  const {coverImages} = req.files;
-  const coverImageUrls = coverImages.map(
-    (file) =>
-      `${req.protocol}://${req.get("host")}/Assets/users/images/${
-        file.filename
-      }`
+  const { coverImages } = req.files;
+  const hasImages = user.coverImages.length > 0;
+  hasImages &&
+    deleteMultipleUploadedImages(
+      user.coverImages.map((image) => image.public_id)
+    );
+  const coverImageUrls = [];
+  for (const image of coverImages) {
+    const cloudinary = await uploadImage({
+      filePath: image.path,
+      options: {
+        folder: process.env.CLOUDINARY_COVER_FOLDER,
+      },
+    });
+    coverImageUrls.push({
+      url: cloudinary.secure_url,
+      public_id: cloudinary.public_id,
+    });
+  }
+  const updatedUser = await User.findByIdAndUpdate(
+    user._id,
+    { coverImages: coverImageUrls },
+    { new: true }
   );
-  console.log(coverImageUrls);
-  await User.findByIdAndUpdate(user._id, { coverImageUrls }, { new: true });
   res.json({
     message: "cover images uploaded successfully",
-    data: { user },
+    data: updatedUser,
   });
 };
-

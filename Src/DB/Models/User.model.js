@@ -44,8 +44,16 @@ const UserSchema = new mongoose.Schema(
       max: [100, "Age must be at most 100"],
     },
     phone: String,
-    imageUrl: String,
-    coverImageUrls: [String],
+    image: {
+      url: String,
+      public_id: String,
+    },
+    coverImages: [
+      {
+        url: String,
+        public_id: String,
+      },
+    ],
     address: String,
     bio: String,
     birthDate: {
