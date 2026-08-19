@@ -19,15 +19,30 @@ export const MessagesSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: Object.values(MESSAGE_STATUS),
-    default: MessagesSchema.UNREAD,
+    default: MESSAGE_STATUS.UNREAD,
+  },
+  isAnonymous: {
+    type: Boolean,
+    default: true,
   },
   isPublic: {
     type: Boolean,
     default: false,
   },
+  publishedAt: {
+    type: Date,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
   },
 });
 

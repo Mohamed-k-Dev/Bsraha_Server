@@ -4,20 +4,7 @@ import { getAccessToken } from "../Utils/getAccessToken.js";
 import { isTokenBlacklisted } from "../Utils/isTokenBlacklisted.js";
 import { decryptPhone } from "../Utils/decryptPhone.js";
 import { errorHandler } from "./errorHandler.middleware.js";
-
-const excludedFields = {
-  password: 0,
-  __v: 0,
-  createdAt: 0,
-  updatedAt: 0,
-  isVerified: 0,
-  otp: 0,
-  otpExpiration: 0,
-  forgetOtp: 0,
-  forgetOtpExpiration: 0,
-  isBlocked: 0,
-  isDeleted: 0,
-};
+import { EXCLUDED_FIELDS } from "../Constants/Constants.js";
 
 export const authenticationMiddleware = errorHandler(async (req, res, next) => {
   const accessToken = getAccessToken(req);
@@ -28,7 +15,7 @@ export const authenticationMiddleware = errorHandler(async (req, res, next) => {
     throw new Error("Access token is blacklisted", { cause: 401 });
   }
 
-  const user = await User.findById(decoded.id, excludedFields);
+  const user = await User.findById(decoded.id, EXCLUDED_FIELDS);
   if (!user) {
     throw new Error("User not found", { cause: 404 });
   }

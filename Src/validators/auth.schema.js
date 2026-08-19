@@ -18,6 +18,12 @@ export const signUpSchema = {
         "string.empty": "User name is required",
         "string.base": "User name must be a string",
       }),
+
+    displayName: Joi.string().required().messages({
+      "any.required": "Display name is required",
+      "string.empty": "Display name is required",
+      "string.base": "Display name must be a string",
+    }),
     email: Joi.string()
       .required()
       .email({
@@ -119,7 +125,7 @@ export const loginSchema = {
         "string.pattern.base":
           "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
       }),
-  })
+  }),
 };
 export const verifyEmailSchema = {
   body: Joi.object({

@@ -9,12 +9,13 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       minLength: [3, "User name must be at least 3 characters long"],
       maxLength: [30, "User name must be at most 30 characters long"],
-      lowerCase: true,
+      lowercase: true,
     },
-    displayName :{ 
+    displayName: {
       type: String,
-      required: [true, "Display name is required"],
       trim: true,
+      required: [true, "Display name is required"],
+      unique: [true, "Display name already exists"],
       minLength: [3, "Display name must be at least 3 characters long"],
       maxLength: [30, "Display name must be at most 30 characters long"],
     },
@@ -41,7 +42,7 @@ const UserSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      lowerCase: true,
+      lowercase: true,
       enum: ["male", "female"],
       default: "male",
     },
@@ -96,6 +97,13 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+UserSchema.pre("save", function () {
+  if (this.isModified("displayName") && !this.displayName.endsWith("Bsraha")) {
+    this.displayName = this.displayName + "@Bsraha";
+  }
+});
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;
