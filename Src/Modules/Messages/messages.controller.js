@@ -25,12 +25,6 @@ messageRouter.post(
   errorHandler(sendMessage)
 );
 
-messageRouter.post(
-  "/public/:displayName",
-  authenticationMiddleware,
-  errorHandler(sendMessage)
-);
-
 messageRouter.patch(
   "/publish/:messageId",
   authenticationMiddleware,
@@ -41,6 +35,12 @@ messageRouter.patch(
   "/unPublish/:messageId",
   authenticationMiddleware,
   errorHandler(unpublishMessage)
+);
+
+messageRouter.patch(
+  "/:messageId/replies-visibility",
+  authenticationMiddleware,
+  errorHandler(updateRepliesVisibility)
 );
 
 messageRouter.delete(
@@ -57,11 +57,6 @@ messageRouter.post(
 
 messageRouter.get(
   "/:messageId/replies",
-  errorHandler(getMessageReplies)
-);
-
-messageRouter.patch(
-  "/:messageId/replies-visibility",
   authenticationMiddleware,
-  errorHandler(updateRepliesVisibility)
+  errorHandler(getMessageReplies)
 );

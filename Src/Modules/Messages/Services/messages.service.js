@@ -1,31 +1,16 @@
 import Messages from "../../../DB/Models/Messages.model.js";
 import Reply from "../../../DB/Models/Reply.model.js";
-import User from "../../../DB/Models/User.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import isActiveUser from "../../../Utils/isActiveUser.utils.js";
 import getPagination from "../../../Utils/getPagination.utils.js";
-
-function sanitizeSender(reply) {
-  const data = reply.toObject ? reply.toObject() : reply;
-
-  if (data.isAnonymous) {
-    data.sender = {
-      displayName: "Anonymous",
-    };
-  } else if (data.sender) {
-    data.sender = {
-      _id: data.sender._id,
-      userName: data.sender.userName,
-      displayName: data.sender.displayName,
-      image: data.sender.image,
-    };
-  }
-
-  return data;
-}
+import sanitizeSender from "../../../Utils/sanitizeSender.utils.js";
+import {
+  canReplyToMessage,
+  canViewReplies,
+} from "../../../Utils/replyPermissions.utils.js";
 
 export async function getMyMessages(req, res, next) {
   const user = req.authUser;
-
   const messages = await Messages.find({
     receiver: user._id,
     isDeleted: false,
@@ -64,21 +49,7 @@ export async function getMyMessages(req, res, next) {
       ...message,
       repliesCount: repliesCountMap.get(message._id.toString()) || 0,
     };
-
-    if (message.isAnonymous) {
-      formattedMessage.sender = {
-        displayName: "Anonymous",
-      };
-    } else if (message.sender) {
-      formattedMessage.sender = {
-        _id: message.sender._id,
-        userName: message.sender.userName,
-        displayName: message.sender.displayName,
-        image: message.sender.image,
-      };
-    }
-
-    return formattedMessage;
+    return sanitizeSender(formattedMessage);
   });
 
   sendSuccessResponse({
@@ -88,48 +59,11 @@ export async function getMyMessages(req, res, next) {
     },
   });
 }
-// export async function getMyMessages(req, res, next) {
-//   const user = req.authUser;
-//   const sentMessages = await Messages.find({
-//     receiver: user._id,
-//     isDeleted: false,
-//   })
-//     .populate("sender", "_id userName displayName image")
-//     .lean();
-
-//   const messages = sentMessages.map((message) => {
-//     if (message.isAnonymous) {
-//       return {
-//         ...message,
-//         sender: {
-//           displayName: "Anonymous",
-//         },
-//       };
-//     }
-
-//     return {
-//       ...message,
-//       sender: {
-//         _id: message.sender._id,
-//         userName: message.sender.userName,
-//         displayName: message.sender.displayName,
-//         image: message.sender.image,
-//       },
-//     };
-//   });
-//   sendSuccessResponse({ res, data: { messages } });
-// }
 
 export async function getPublicMessages(req, res, next) {
   const { displayName } = req.params;
 
-  const user = await User.findOne({
-    displayName: `${displayName}@Bsraha`,
-    isVerified: true,
-    isBlocked: false,
-    isDeleted: false,
-  });
-
+  const user = await isActiveUser(displayName);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
@@ -144,24 +78,7 @@ export async function getPublicMessages(req, res, next) {
     .lean();
 
   const publicMessages = messages.map((message) => {
-    if (message.isAnonymous) {
-      return {
-        ...message,
-        sender: {
-          displayName: "Anonymous",
-        },
-      };
-    }
-
-    return {
-      ...message,
-      sender: {
-        _id: message.sender._id,
-        userName: message.sender.userName,
-        displayName: message.sender.displayName,
-        image: message.sender.image,
-      },
-    };
+    return sanitizeSender(message);
   });
 
   sendSuccessResponse({
@@ -177,23 +94,26 @@ export async function sendMessage(req, res, next) {
   const receiverUserName = req.params.displayName;
   const { content, isAnonymous } = req.body;
 
-  const user = await User.findOne({
-    displayName: `${receiverUserName}@Bsraha`,
-    isVerified: true,
-    isBlocked: false,
-    isDeleted: false,
-  });
-  if (!user) {
+  const receiver = await isActiveUser(receiverUserName);
+  if (!receiver) {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  const messages = await Messages.create({
+  if (receiver._id.toString() === sender._id.toString()) {
+    return next(
+      new Error("You cannot send a message to yourself", {
+        cause: 400,
+      })
+    );
+  }
+
+  const message = await Messages.create({
     sender: sender._id,
-    receiver: user._id,
+    receiver: receiver._id,
     content,
     isAnonymous,
   });
-  sendSuccessResponse({ res, data: { messages } });
+  sendSuccessResponse({ res, data: { message } });
 }
 
 export async function publishMessage(req, res, next) {
@@ -282,6 +202,48 @@ export async function unpublishMessage(req, res, next) {
   });
 }
 
+export async function updateRepliesVisibility(req, res, next) {
+  const user = req.authUser;
+  const { messageId } = req.params;
+  const { showReplies } = req.body;
+
+  const message = await Messages.findOne({
+    _id: messageId,
+    isDeleted: false,
+  });
+
+  if (!message) {
+    return next(new Error("Message not found", { cause: 404 }));
+  }
+
+  if (message.receiver.toString() !== user._id.toString()) {
+    return next(
+      new Error("You are not allowed to update replies visibility", {
+        cause: 403,
+      })
+    );
+  }
+
+  const updatedMessage = await Messages.findByIdAndUpdate(
+    { _id: messageId, isDeleted: false, receiver: user._id },
+    {
+      showReplies,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  sendSuccessResponse({
+    res,
+    message: "Replies visibility updated successfully",
+    data: {
+      message: updatedMessage,
+    },
+  });
+}
+
 export async function deleteMessage(req, res, next) {
   const user = req.authUser;
   const messageId = req.params.messageId;
@@ -307,35 +269,6 @@ export async function deleteMessage(req, res, next) {
   });
 }
 
-// export async function createMessageReply(req, res, next) {
-//   const user = req.authUser;
-//   const { messageId } = req.params;
-//   const { content, isAnonymous } = req.body;
-
-//   const message = await Messages.findOne({
-//     _id: messageId,
-//     isDeleted: false,
-//   });
-
-//   if (!message) {
-//     return next(new Error("Message not found", { cause: 404 }));
-//   }
-
-//   const reply = await Reply.create({
-//     message: message._id,
-//     parentReply: null,
-//     sender: user._id,
-//     content,
-//     isAnonymous,
-//   });
-
-//   sendSuccessResponse({
-//     res,
-//     message: "Reply added successfully",
-//     data: { reply },
-//   });
-// }
-
 export async function createMessageReply(req, res, next) {
   const user = req.authUser;
   const { messageId } = req.params;
@@ -350,11 +283,7 @@ export async function createMessageReply(req, res, next) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
-  if (
-    (!message.isPublic &&
-      message.receiver.toString() !== user._id.toString()) ||
-    message.sender.toString() === user._id.toString()
-  ) {
+  if (!canReplyToMessage(message, user._id)) {
     return next(
       new Error("You are not allowed to reply to this message", {
         cause: 403,
@@ -370,17 +299,7 @@ export async function createMessageReply(req, res, next) {
     isAnonymous,
   });
 
-  const populatedReply = await Reply.findById(reply._id)
-    .populate("sender", "_id userName displayName image")
-    .select("-__v");
-
-  const responseReply = populatedReply.toObject();
-
-  if (responseReply.isAnonymous) {
-    responseReply.sender = {
-      displayName: "Anonymous",
-    };
-  }
+  const responseReply = sanitizeSender(reply);
 
   sendSuccessResponse({
     res,
@@ -405,14 +324,12 @@ export async function getMessageReplies(req, res, next) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
-  if (!message.isPublic) {
-    if (message.receiver.toString() !== user._id.toString()) {
-      return next(
-        new Error("You are not allowed to view these replies", {
-          cause: 403,
-        })
-      );
-    }
+  if (!canViewReplies(message, user._id)) {
+    return next(
+      new Error("You are not allowed to view these replies", {
+        cause: 403,
+      })
+    );
   }
 
   const filter = {
@@ -447,45 +364,6 @@ export async function getMessageReplies(req, res, next) {
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
       },
-    },
-  });
-}
-
-export async function updateRepliesVisibility(req, res, next) {
-  const user = req.authUser;
-  const { messageId } = req.params;
-  const { showReplies } = req.body;
-
-  const message = await Messages.findById(messageId);
-
-  if (!message) {
-    return next(new Error("Message not found", { cause: 404 }));
-  }
-
-  if (message.receiver.toString() !== user._id.toString()) {
-    return next(
-      new Error("You are not allowed to update replies visibility", {
-        cause: 403,
-      })
-    );
-  }
-
-  const updatedMessage = await Messages.findByIdAndUpdate(
-    messageId,
-    {
-      showReplies,
-    },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
-
-  sendSuccessResponse({
-    res,
-    message: "Replies visibility updated successfully",
-    data: {
-      message: updatedMessage,
     },
   });
 }

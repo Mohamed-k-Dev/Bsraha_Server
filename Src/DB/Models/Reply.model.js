@@ -47,15 +47,92 @@ const ReplySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/*
+|--------------------------------------------------------------------------
+| Encrypt content before saving
+|--------------------------------------------------------------------------
+*/
+
+// ReplySchema.pre("save", function (next) {
+//   if (!this.isModified("content")) {
+//     return next();
+//   }
+
+//   this.content = encrypt({
+//     plainText: this.content,
+//     secretKey: process.env.REPLY_CONTENT_SECRET_KEY,
+//   });
+
+//   next();
+// });
+
+// /*
+// |--------------------------------------------------------------------------
+// | Decrypt content when MongoDB initializes the document
+// |--------------------------------------------------------------------------
+// */
+
+// ReplySchema.post("init", function (doc) {
+//   if (!doc.content) {
+//     return;
+//   }
+
+//   try {
+//     doc.content = decrypt({
+//       cipherText: doc.content,
+//       secretKey: process.env.REPLY_CONTENT_SECRET_KEY,
+//     });
+//   } catch (error) {
+//     console.error("Failed to decrypt reply content:", error.message);
+//   }
+// });
+
+// /*
+// |--------------------------------------------------------------------------
+// | Decrypt the document returned by create/save
+// |--------------------------------------------------------------------------
+// |
+// | post("save") is important because `create()` returns the same
+// | document after saving, and post("init") does not run there.
+// |
+// */
+
+// ReplySchema.post("save", function (doc) {
+//   if (!doc.content) {
+//     return;
+//   }
+
+//   try {
+//     doc.content = decrypt({
+//       cipherText: doc.content,
+//       secretKey: process.env.REPLY_CONTENT_SECRET_KEY,
+//     });
+//   } catch (error) {
+//     console.error("Failed to decrypt reply content:", error.message);
+//   }
+// });
+
+/*
+|--------------------------------------------------------------------------
+| Indexes
+|--------------------------------------------------------------------------
+*/
+
 ReplySchema.index({
   message: 1,
   parentReply: 1,
+  isDeleted: 1,
   createdAt: -1,
 });
 
 ReplySchema.index({
   sender: 1,
+  isDeleted: 1,
 });
+
+const Reply = mongoose.models.Reply || mongoose.model("Reply", ReplySchema);
+
+export default Reply;
 
 // ReplySchema.pre("save", function (next) {
 //   if (!this.isModified("content")) {
@@ -90,7 +167,7 @@ ReplySchema.index({
 //   }
 // });
 
-const Reply =
-  mongoose.models.Reply || mongoose.model("Reply", ReplySchema);
+// const Reply =
+//   mongoose.models.Reply || mongoose.model("Reply", ReplySchema);
 
-export default Reply;
+// export default Reply;
