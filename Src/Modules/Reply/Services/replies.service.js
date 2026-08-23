@@ -2,81 +2,41 @@ import Messages from "../../../DB/Models/Messages.model.js";
 import Reply from "../../../DB/Models/Reply.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 import getPagination from "../../../Utils/getPagination.utils.js";
+import {
+  canReplyToMessage,
+  canViewReplies,
+} from "../../../Utils/replyPermissions.utils.js";
+import { getReplyDescendantIds } from "../../../Utils/replyTree.utils.js";
 import sanitizeSender from "../../../Utils/sanitizeSender.utils.js";
-
-function buildReplyTree(replies) {
-  const replyMap = new Map();
-  const tree = [];
-
-  for (const reply of replies) {
-    replyMap.set(reply._id.toString(), {
-      ...reply,
-      replies: [],
-    });
-  }
-
-  for (const reply of replyMap.values()) {
-    if (!reply.parentReply) {
-      tree.push(reply);
-      continue;
-    }
-
-    const parent = replyMap.get(reply.parentReply.toString());
-
-    if (parent) {
-      parent.replies.push(reply);
-    }
-  }
-
-  return tree;
-}
-
-async function findMessage(messageId) {
-  return Messages.findOne({
-    _id: messageId,
-    isDeleted: false,
-  });
-}
-
-async function findReply(replyId) {
-  return Reply.findOne({
-    _id: replyId,
-    isDeleted: false,
-  });
-}
-
-function canReplyToMessage(message, user) {
-  if (message.isPublic) {
-    return true;
-  }
-
-  return message.receiver.toString() === user._id.toString();
-}
 
 export async function createReplyReply(req, res, next) {
   const user = req.authUser;
   const { replyId } = req.params;
   const { content, isAnonymous } = req.body;
 
-  const parentReply = await findReply(replyId);
-
+  const parentReply = await Reply.findOne({
+    _id: replyId,
+    isDeleted: false,
+  });
   if (!parentReply) {
     return next(new Error("Reply not found", { cause: 404 }));
   }
 
-  const message = await findMessage(parentReply.message);
-
+  const message = await Messages.findOne({
+    _id: parentReply.message,
+    isDeleted: false,
+  });
   if (!message) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
-  // if (!canReplyToMessage(message, user)) {
-  //   return next(
-  //     new Error("You are not allowed to reply to this conversation", {
-  //       cause: 403,
-  //     })
-  //   );
-  // }
+  if (!canReplyToMessage(message, user._id)) {
+    return next(
+      new Error("You are not allowed to reply to this conversation", {
+        cause: 403,
+      })
+    );
+  }
 
   const reply = await Reply.create({
     message: message._id,
@@ -86,12 +46,7 @@ export async function createReplyReply(req, res, next) {
     isAnonymous,
   });
 
-  const populatedReply = await Reply.findById(reply._id).populate(
-    "sender",
-    "_id userName displayName image"
-  );
-
-  const responseReply = sanitizeSender(populatedReply);
+  const responseReply = sanitizeSender(reply);
 
   sendSuccessResponse({
     res,
@@ -103,32 +58,33 @@ export async function createReplyReply(req, res, next) {
 }
 
 export async function getReplyReplies(req, res, next) {
+  const user = req.authUser;
   const { replyId } = req.params;
   const { page, limit, skip } = getPagination(req.query);
 
-  const parentReply = await findReply(replyId);
-
+  const parentReply = await Reply.findOne({
+    _id: replyId,
+    isDeleted: false,
+  });
   if (!parentReply) {
     return next(new Error("Reply not found", { cause: 404 }));
   }
 
-  const message = await findMessage(parentReply.message);
-
+  const message = await Messages.findOne({
+    _id: parentReply.message,
+    isDeleted: false,
+  });
   if (!message) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
-  // if (!message.isPublic) {
-  //   const user = req.authUser;
-
-  //   if (!user || message.receiver.toString() !== user._id.toString()) {
-  //     return next(
-  //       new Error("You are not allowed to view these replies", {
-  //         cause: 403,
-  //       })
-  //     );
-  //   }
-  // }
+  if (!canViewReplies(message, user._id)) {
+    return next(
+      new Error("You are not allowed to view replies to this conversation", {
+        cause: 403,
+      })
+    );
+  }
 
   const filter = {
     message: message._id,
@@ -172,18 +128,47 @@ export async function deleteReply(req, res, next) {
 
   const reply = await Reply.findOne({
     _id: replyId,
-    sender: user._id,
+    isDeleted: false,
+  });
+  if (!reply) {
+    return next(
+      new Error("Reply not found", {
+        cause: 404,
+      })
+    );
+  }
+
+  const message = await Messages.findOne({
+    _id: reply.message,
     isDeleted: false,
   });
 
-  if (!reply) {
-    return next(new Error("Reply not found", { cause: 404 }));
+  const isReplyOwner = reply.sender.toString() === user._id.toString();
+  const isMessageOwner = message.receiver.toString() === user._id.toString();
+  if (!isReplyOwner && !isMessageOwner) {
+    return next(
+      new Error("You are not allowed to delete this reply", {
+        cause: 403,
+      })
+    );
   }
 
-  reply.isDeleted = true;
-  reply.deletedAt = new Date();
+  const replyIds = await getReplyDescendantIds(reply._id);
 
-  await reply.save();
+  await Reply.updateMany(
+    {
+      _id: {
+        $in: replyIds,
+      },
+      isDeleted: false,
+    },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    }
+  );
 
   sendSuccessResponse({
     res,

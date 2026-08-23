@@ -16,7 +16,11 @@ replyRouter.post(
   errorHandler(createReplyReply)
 );
 
-replyRouter.get("/:replyId/replies", errorHandler(getReplyReplies));
+replyRouter.get(
+  "/:replyId/replies",
+  authenticationMiddleware,
+  errorHandler(getReplyReplies)
+);
 
 replyRouter.delete(
   "/:replyId",

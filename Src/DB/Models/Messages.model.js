@@ -33,7 +33,7 @@ export const MessagesSchema = new mongoose.Schema({
   },
   showReplies: {
     type: Boolean,
-    default: true,
+    default: false,
   },
   publishedAt: {
     type: Date,

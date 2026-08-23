@@ -76,15 +76,43 @@ export async function getPublicMessages(req, res, next) {
     .populate("sender", "_id userName displayName image")
     .sort({ publishedAt: -1 })
     .lean();
+  const messageIds = messages.map((message) => message._id);
 
-  const publicMessages = messages.map((message) => {
-    return sanitizeSender(message);
+  const repliesCount = await Reply.aggregate([
+    {
+      $match: {
+        message: {
+          $in: messageIds,
+        },
+        isDeleted: false,
+      },
+    },
+    {
+      $group: {
+        _id: "$message",
+        count: {
+          $sum: 1,
+        },
+      },
+    },
+  ]);
+
+  const repliesCountMap = new Map(
+    repliesCount.map((item) => [item._id.toString(), item.count])
+  );
+
+  const formattedMessages = messages.map((message) => {
+    const formattedMessage = {
+      ...message,
+      repliesCount: repliesCountMap.get(message._id.toString()) || 0,
+    };
+    return sanitizeSender(formattedMessage);
   });
 
   sendSuccessResponse({
     res,
     data: {
-      messages: publicMessages,
+      messages: formattedMessages,
     },
   });
 }
@@ -130,7 +158,7 @@ export async function publishMessage(req, res, next) {
 
   if (message.receiver.toString() !== user._id.toString()) {
     return next(
-      new Error("You are not allowed to unpublish this message", { cause: 403 })
+      new Error("You are not allowed to publish this message", { cause: 403 })
     );
   }
   if (message.isPublic) {
@@ -170,7 +198,7 @@ export async function unpublishMessage(req, res, next) {
 
   if (message.receiver.toString() !== user._id.toString()) {
     return next(
-      new Error("You are not allowed to publish this message", { cause: 403 })
+      new Error("You are not allowed to unpublish this message", { cause: 403 })
     );
   }
 
@@ -319,7 +347,6 @@ export async function getMessageReplies(req, res, next) {
     _id: messageId,
     isDeleted: false,
   });
-
   if (!message) {
     return next(new Error("Message not found", { cause: 404 }));
   }
