@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { MESSAGE_STATUS } from "../../Constants/Constants.js";
+import { encrypt } from "../../Utils/encryption.utils.js";
 
 export const MessagesSchema = new mongoose.Schema({
   sender: {
@@ -29,6 +30,10 @@ export const MessagesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  showReplies: {
+    type: Boolean,
+    default: true,
+  },
   publishedAt: {
     type: Date,
   },
@@ -45,6 +50,15 @@ export const MessagesSchema = new mongoose.Schema({
     default: null,
   },
 });
+
+// encrypt and content before save or update message content
+// MessagesSchema.pre("save", async function () {
+//   const encryptedContent = await encrypt({
+//     plainText: this.content,
+//     secretKey: process.env.MESSAGE_SECRET_KEY,
+//   });
+//   this.content = encryptedContent;
+// });
 
 const Messages =
   mongoose.models.Messages || mongoose.model("Messages", MessagesSchema);

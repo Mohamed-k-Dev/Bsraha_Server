@@ -2,12 +2,15 @@ import { Router } from "express";
 import { authenticationMiddleware } from "../../Middleware/auth.middleware.js";
 import { errorHandler } from "../../Middleware/errorHandler.middleware.js";
 import {
+  createMessageReply,
   deleteMessage,
+  getMessageReplies,
   getMyMessages,
   getPublicMessages,
   publishMessage,
   sendMessage,
   unpublishMessage,
+  updateRepliesVisibility,
 } from "./Services/messages.service.js";
 
 export const messageRouter = Router();
@@ -44,4 +47,21 @@ messageRouter.delete(
   "/delete/:messageId",
   authenticationMiddleware,
   errorHandler(deleteMessage)
+);
+
+messageRouter.post(
+  "/:messageId/reply",
+  authenticationMiddleware,
+  errorHandler(createMessageReply)
+);
+
+messageRouter.get(
+  "/:messageId/replies",
+  errorHandler(getMessageReplies)
+);
+
+messageRouter.patch(
+  "/:messageId/replies-visibility",
+  authenticationMiddleware,
+  errorHandler(updateRepliesVisibility)
 );
