@@ -1,6 +1,9 @@
+import { REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
 import Messages from "../../../DB/Models/Messages.model.js";
 import Reply from "../../../DB/Models/Reply.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
+import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
 import getPagination from "../../../Utils/getPagination.utils.js";
 import {
   canReplyToMessage,
@@ -47,7 +50,7 @@ export async function createReplyReply(req, res, next) {
   });
 
   const responseReply = sanitizeSender(reply);
-
+  responseReply.reactions = formatReactionSummary(reply.reactionSummary, null);
   sendSuccessResponse({
     res,
     message: "Reply added successfully",
@@ -101,8 +104,24 @@ export async function getReplyReplies(req, res, next) {
 
     Reply.countDocuments(filter),
   ]);
+  const replyIds = replies.map((reply) => reply._id);
 
-  const formattedReplies = replies.map(sanitizeSender);
+  const myReactionsMap = await getMyReactionsMap({
+    userId: user._id,
+    targetIds: replyIds,
+    targetType: REACTION_TARGET_TYPES.REPLY,
+  });
+
+  const formattedReplies = replies.map((reply) => ({
+    ...sanitizeSender(reply),
+
+    reactions: formatReactionSummary(
+      reply.reactionSummary,
+      myReactionsMap.get(reply._id.toString()) || null
+    ),
+  }));
+
+  // const formattedReplies = replies.map(sanitizeSender);
 
   const totalPages = Math.ceil(total / limit);
 

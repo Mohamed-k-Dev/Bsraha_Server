@@ -8,6 +8,9 @@ import {
   canReplyToMessage,
   canViewReplies,
 } from "../../../Utils/replyPermissions.utils.js";
+import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
+import { REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
+import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
 
 export async function getMyMessages(req, res, next) {
   const user = req.authUser;
@@ -20,6 +23,11 @@ export async function getMyMessages(req, res, next) {
     .lean();
 
   const messageIds = messages.map((message) => message._id);
+  const myReactionsMap = await getMyReactionsMap({
+    userId: user._id,
+    targetIds: messageIds,
+    targetType: REACTION_TARGET_TYPES.MESSAGE,
+  });
 
   const repliesCount = await Reply.aggregate([
     {
@@ -45,8 +53,12 @@ export async function getMyMessages(req, res, next) {
   );
 
   const formattedMessages = messages.map((message) => {
+    const myReaction = myReactionsMap.get(message._id.toString()) || null;
+
     const formattedMessage = {
       ...message,
+      reactions: formatReactionSummary(message.reactionSummary, myReaction),
+
       repliesCount: repliesCountMap.get(message._id.toString()) || 0,
     };
     return sanitizeSender(formattedMessage);
@@ -77,6 +89,11 @@ export async function getPublicMessages(req, res, next) {
     .sort({ publishedAt: -1 })
     .lean();
   const messageIds = messages.map((message) => message._id);
+  const myReactionsMap = await getMyReactionsMap({
+    userId: req.authUser._id,
+    targetIds: messageIds,
+    targetType: REACTION_TARGET_TYPES.MESSAGE,
+  });
 
   const repliesCount = await Reply.aggregate([
     {
@@ -104,6 +121,10 @@ export async function getPublicMessages(req, res, next) {
   const formattedMessages = messages.map((message) => {
     const formattedMessage = {
       ...message,
+      reactions: formatReactionSummary(
+        message.reactionSummary,
+        myReactionsMap.get(message._id.toString())
+      ),
       repliesCount: repliesCountMap.get(message._id.toString()) || 0,
     };
     return sanitizeSender(formattedMessage);
@@ -374,8 +395,22 @@ export async function getMessageReplies(req, res, next) {
 
     Reply.countDocuments(filter),
   ]);
+  const replyIds = replies.map((reply) => reply._id);
 
-  const formattedReplies = replies.map(sanitizeSender);
+  const myReactionsMap = await getMyReactionsMap({
+    userId: user._id,
+    targetIds: replyIds,
+    targetType: REACTION_TARGET_TYPES.REPLY,
+  });
+
+  const formattedReplies = replies.map((reply) => ({
+    ...sanitizeSender(reply),
+
+    reactions: formatReactionSummary(
+      reply.reactionSummary,
+      myReactionsMap.get(reply._id.toString()) || null
+    ),
+  }));
 
   const totalPages = Math.ceil(total / limit);
 
