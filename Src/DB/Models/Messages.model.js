@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { MESSAGE_STATUS } from "../../Constants/Constants.js";
 import { encrypt } from "../../Utils/encryption.utils.js";
 import decryptContent from "../../Utils/decryptContent.utils.js";
+import { ReactionSummarySchema } from "./reactionSummary.schema.js";
 
 export const MessagesSchema = new mongoose.Schema({
   sender: {
@@ -23,6 +24,10 @@ export const MessagesSchema = new mongoose.Schema({
     enum: Object.values(MESSAGE_STATUS),
     default: MESSAGE_STATUS.UNREAD,
   },
+  reactionSummary: {
+    type: ReactionSummarySchema,
+    default: () => ({}),
+  },
   isAnonymous: {
     type: Boolean,
     default: true,
@@ -35,16 +40,16 @@ export const MessagesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
   publishedAt: {
     type: Date,
   },
   createdAt: {
     type: Date,
     default: Date.now,
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false,
   },
   deletedAt: {
     type: Date,

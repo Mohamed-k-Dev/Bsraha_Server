@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { encrypt } from "../../Utils/encryption.utils.js";
 import decryptContent from "../../Utils/decryptContent.utils.js";
+import { ReactionSummarySchema } from "./reactionSummary.schema.js";
 
 const ReplySchema = new mongoose.Schema(
   {
@@ -27,6 +28,11 @@ const ReplySchema = new mongoose.Schema(
       required: [true, "Reply content is required"],
       trim: true,
       maxLength: [1000, "Reply must be at most 1000 characters long"],
+    },
+
+    reactionSummary: {
+      type: ReactionSummarySchema,
+      default: () => ({}),
     },
 
     isAnonymous: {
