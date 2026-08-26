@@ -30,14 +30,30 @@ export const generalFieldsSchema = {
     "boolean.base": "showReplies must be a boolean",
     "any.required": "showReplies is required",
   }),
-  page: Joi.number().default(1),
-  limit: Joi.number().default(10),
-  skip: Joi.number().default(0),
-  type: Joi.string().valid(...Object.values(REACTION_TYPES)).required().messages({
-    "any.only": "Invalid reaction type",
-    "any.required": "Reaction type is required",
-    "string.empty": "Reaction type is required",
+  page: Joi.number().integer().min(1).default(1).messages({
+    "number.base": "Page must be a number",
+    "number.integer": "Page must be an integer",
+    "number.min": "Page must be at least 1",
   }),
+  limit: Joi.number().integer().min(1).max(100).default(10).messages({
+    "number.base": "Limit must be a number",
+    "number.integer": "Limit must be an integer",
+    "number.min": "Limit must be at least 1",
+    "number.max": "Limit must not exceed 100",
+  }),
+  skip: Joi.number().integer().min(0).default(0).messages({
+    "number.base": "Skip must be a number",
+    "number.integer": "Skip must be an integer",
+    "number.min": "Skip must be at least 0",
+  }),
+  type: Joi.string()
+    .valid(...Object.values(REACTION_TYPES))
+    .required()
+    .messages({
+      "any.only": "Invalid reaction type",
+      "any.required": "Reaction type is required",
+      "string.empty": "Reaction type is required",
+    }),
   targetType: Joi.string()
     .valid(...Object.values(REACTION_TARGET_TYPES))
     .required()

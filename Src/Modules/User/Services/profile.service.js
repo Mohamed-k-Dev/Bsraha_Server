@@ -6,15 +6,106 @@ import uploadImage, {
   deleteMultipleUploadedImages,
   deleteUploadedImage,
 } from "../../../Service/cloudinary.service.js";
+import Messages from "../../../DB/Models/Messages.model.js";
+import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
+
+export const getProfile = async (req, res, next) => {
+  const user = req.authUser;
+  sendSuccessResponse({ res, data: { user } });
+};
 
 export const listUsers = async (req, res) => {
   const users = await User.find({});
   sendSuccessResponse({ res, data: { users } });
 };
 
-export const getProfile = async (req, res, next) => {
-  const user = req.authUser;
-  sendSuccessResponse({ res, data: { user } });
+export const getPublicProfile = async (req, res, next) => {
+  const { displayName } = req.params;
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const user = await User.findOne({
+    displayName: `${displayName}@Bsraha`,
+    isVerified: true,
+    isBlocked: false,
+    isDeleted: false,
+  })
+    .select("_id displayName userName image bio")
+    .lean();
+  if (!user) {
+    return next(
+      new Error("User not found", {
+        cause: 404,
+      })
+    );
+  }
+
+  const [messages, totalMessages] = await Promise.all([
+    Messages.find({
+      receiver: user._id,
+      isPublic: true,
+      isDeleted: false,
+    })
+      .populate("sender", "_id userName displayName image")
+      .sort({
+        publishedAt: -1,
+      })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+
+    Messages.countDocuments({
+      receiver: user._id,
+      isPublic: true,
+      isDeleted: false,
+    }),
+  ]);
+  const totalPages = Math.ceil(totalMessages / limit);
+
+  const formattedMessages = messages.map((message) => {
+    return {
+      ...message,
+
+      sender: message.isAnonymous
+        ? {
+            displayName: "Anonymous",
+          }
+        : message.sender
+        ? {
+            _id: message.sender._id,
+            userName: message.sender.userName,
+            displayName: message.sender.displayName,
+            image: message.sender.image,
+          }
+        : null,
+
+      reactions: formatReactionSummary(message.reactionSummary, null),
+      showReplies: message.showReplies,
+    };
+  });
+
+  sendSuccessResponse({
+    res,
+    data: {
+      profile: {
+        _id: user._id,
+        userName: user.userName,
+        displayName: user.displayName,
+        image: user.image,
+        bio: user.bio,
+      },
+      messages: formattedMessages,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalMessages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    },
+  });
 };
 
 export const updatePassword = async (req, res, next) => {

@@ -57,6 +57,13 @@ export const MessagesSchema = new mongoose.Schema({
   },
 });
 
+MessagesSchema.index({
+  receiver: 1,
+  isPublic: 1,
+  isDeleted: 1,
+  publishedAt: -1,
+});
+
 const Messages =
   mongoose.models.Messages || mongoose.model("Messages", MessagesSchema);
 export default Messages;
