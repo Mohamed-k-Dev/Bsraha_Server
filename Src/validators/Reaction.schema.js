@@ -11,9 +11,9 @@ export const createReactionSchema = {
   }),
 };
 
-export const removeReactionSchema = Joi.object({
-  params: {
+export const removeReactionSchema = {
+  params: Joi.object({
     targetType: generalFieldsSchema.targetType,
     targetId: generalFieldsSchema.mongoId,
-  },
-});
+  }),
+};

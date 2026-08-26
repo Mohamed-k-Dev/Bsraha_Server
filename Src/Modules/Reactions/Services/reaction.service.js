@@ -1,8 +1,4 @@
 import mongoose from "mongoose";
-import {
-  REACTION_TARGET_TYPES,
-  REACTION_TYPES,
-} from "../../../Constants/Constants.js";
 import Reaction from "../../../DB/Models/Reaction.model.js";
 import getReactionTarget from "../../../Utils/getReactionTarget.utils.js";
 import updateReactionSummary from "../../../Utils/updateReactionSummary.utils.js";
@@ -134,19 +130,10 @@ export async function removeReaction(req, res, next) {
   const user = req.authUser;
   const { targetType, targetId } = req.params;
 
-  if (!Object.values(REACTION_TARGET_TYPES).includes(targetType)) {
-    return next(
-      new Error("Invalid reaction to target type", {
-        cause: 400,
-      })
-    );
-  }
-
   const target = await getReactionTarget({
     targetId,
     targetType,
   });
-
   if (!target) {
     return next(
       new Error("Target not found", {
@@ -160,7 +147,6 @@ export async function removeReaction(req, res, next) {
     target: targetId,
     targetType,
   });
-
   if (!reaction) {
     return next(
       new Error("Reaction not found", {
