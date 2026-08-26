@@ -1,4 +1,8 @@
 import Joi from "joi";
+import {
+  REACTION_TARGET_TYPES,
+  REACTION_TYPES,
+} from "../Constants/Constants.js";
 
 export const generalFieldsSchema = {
   displayName: Joi.string().trim().min(3).max(30).required().messages({
@@ -29,4 +33,16 @@ export const generalFieldsSchema = {
   page: Joi.number().default(1),
   limit: Joi.number().default(10),
   skip: Joi.number().default(0),
+  type: Joi.string().valid(...Object.values(REACTION_TYPES)).required().messages({
+    "any.only": "Invalid reaction type",
+    "any.required": "Reaction type is required",
+    "string.empty": "Reaction type is required",
+  }),
+  targetType: Joi.string()
+    .valid(...Object.values(REACTION_TARGET_TYPES))
+    .required()
+    .messages({
+      "any.only": "Invalid reaction target type",
+      "any.required": "Reaction target type is required",
+    }),
 };
