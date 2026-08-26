@@ -31,6 +31,6 @@ export const REACTION_TYPES = {
 };
 
 export const REACTION_TARGET_TYPES = {
-  MESSAGE: "Messages",
-  REPLY: "Reply",
+  MESSAGE: "message",
+  REPLY: "reply",
 };

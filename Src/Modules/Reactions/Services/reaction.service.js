@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import {
   REACTION_TARGET_TYPES,
   REACTION_TYPES,
@@ -5,27 +6,12 @@ import {
 import Reaction from "../../../DB/Models/Reaction.model.js";
 import getReactionTarget from "../../../Utils/getReactionTarget.utils.js";
 import updateReactionSummary from "../../../Utils/updateReactionSummary.utils.js";
+import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 
 export async function reactToTarget(req, res, next) {
   const user = req.authUser;
   const { targetType, targetId } = req.params;
   const { type } = req.body;
-
-  if (!Object.values(REACTION_TARGET_TYPES).includes(targetType)) {
-    return next(
-      new Error("Invalid reaction to target type", {
-        cause: 400,
-      })
-    );
-  }
-
-  if (!Object.values(REACTION_TYPES).includes(type)) {
-    return next(
-      new Error("Invalid reaction type", {
-        cause: 400,
-      })
-    );
-  }
 
   const target = await getReactionTarget({
     targetId,
@@ -146,7 +132,6 @@ export async function reactToTarget(req, res, next) {
 
 export async function removeReaction(req, res, next) {
   const user = req.authUser;
-
   const { targetType, targetId } = req.params;
 
   if (!Object.values(REACTION_TARGET_TYPES).includes(targetType)) {
