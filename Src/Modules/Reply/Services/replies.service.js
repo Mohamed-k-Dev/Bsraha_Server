@@ -121,8 +121,6 @@ export async function getReplyReplies(req, res, next) {
     ),
   }));
 
-  // const formattedReplies = replies.map(sanitizeSender);
-
   const totalPages = Math.ceil(total / limit);
 
   sendSuccessResponse({
