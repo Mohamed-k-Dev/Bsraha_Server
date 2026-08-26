@@ -4,6 +4,7 @@ import { authRouter } from "../Modules/Auth/auth.controller.js";
 import { userRouter } from "../Modules/User/profile.controller.js";
 import { messageRouter } from "../Modules/Messages/messages.controller.js";
 import { replyRouter } from "../Modules/Reply/replies.controller.js";
+import { reactionRouter } from "../Modules/Reactions/reaction.controller.js";
 
 export default function routerHandler(app, express, corsOptions) {
   app.use(cors(corsOptions));
@@ -13,5 +14,6 @@ export default function routerHandler(app, express, corsOptions) {
   app.use("/api/v1/user", userRouter);
   app.use("/api/v1/message", messageRouter);
   app.use("/api/v1/reply", replyRouter);
+  app.use("/api/v1/reaction", reactionRouter);
   app.use(globalErrorHandler);
 }

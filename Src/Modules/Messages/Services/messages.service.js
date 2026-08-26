@@ -11,6 +11,15 @@ import {
 import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
 import { REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
+import mongoose from "mongoose";
+
+async function isValidMongoId(id) {
+  try {
+    return mongoose.Types.ObjectId.isValid(id);
+  } catch (error) {
+    return false;
+  }
+}
 
 export async function getMyMessages(req, res, next) {
   const user = req.authUser;
@@ -94,6 +103,7 @@ export async function getPublicMessages(req, res, next) {
     targetIds: messageIds,
     targetType: REACTION_TARGET_TYPES.MESSAGE,
   });
+  console.log(myReactionsMap);
 
   const repliesCount = await Reply.aggregate([
     {

@@ -56,22 +56,10 @@ export async function reactToTarget(req, res, next) {
     });
   }
 
-  /*
-    |--------------------------------------------------------------------------
-    | Transaction
-    |--------------------------------------------------------------------------
-    */
-
   const session = await mongoose.startSession();
 
   try {
     session.startTransaction();
-
-    /*
-      |--------------------------------------------------------------------------
-      | No previous reaction
-      |--------------------------------------------------------------------------
-      */
 
     if (!existingReaction) {
       await Reaction.create(
@@ -97,11 +85,6 @@ export async function reactToTarget(req, res, next) {
         session,
       });
     } else {
-      /*
-      |--------------------------------------------------------------------------
-      | Change existing reaction
-      |--------------------------------------------------------------------------
-      */
       const oldType = existingReaction.type;
 
       await Reaction.updateOne(
@@ -160,6 +143,7 @@ export async function reactToTarget(req, res, next) {
     },
   });
 }
+
 export async function removeReaction(req, res, next) {
   const user = req.authUser;
 
