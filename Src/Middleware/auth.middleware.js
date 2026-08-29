@@ -9,7 +9,7 @@ import { EXCLUDED_FIELDS } from "../Constants/Constants.js";
 export const authenticationMiddleware = errorHandler(async (req, res, next) => {
   const accessToken = getAccessToken(req);
 
-  const decoded = await verifyAccessToken(accessToken, next);
+  const decoded = await verifyAccessToken(accessToken);
   const isAccessTokenBlacklisted = await isTokenBlacklisted(decoded.jti);
   if (isAccessTokenBlacklisted) {
     throw new Error("Access token is blacklisted", { cause: 401 });
