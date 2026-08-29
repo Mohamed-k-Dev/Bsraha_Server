@@ -46,6 +46,11 @@ export const generalFieldsSchema = {
     "number.integer": "Skip must be an integer",
     "number.min": "Skip must be at least 0",
   }),
+  q: Joi.string().trim().min(1).max(100).messages({
+    "string.empty": "Search query is required",
+    "string.min": "Search query must be at least 1 character",
+    "string.max": "Search query must not exceed 100 characters",
+  }),
   type: Joi.string()
     .valid(...Object.values(REACTION_TYPES))
     .required()

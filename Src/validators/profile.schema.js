@@ -11,3 +11,12 @@ export const getPublicProfileSchema = {
     skip: generalFieldsSchema.skip,
   }),
 };
+
+
+export const searchUsersSchema = {
+  query: Joi.object({
+    q: generalFieldsSchema.q,
+    page: generalFieldsSchema.page,
+    limit: generalFieldsSchema.limit,
+  }),
+};

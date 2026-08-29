@@ -108,6 +108,48 @@ export const getPublicProfile = async (req, res, next) => {
   });
 };
 
+export async function searchUsers(req, res, next) {
+  const { q, page = 1, limit = 10 } = req.query;
+  const skip = (page - 1) * limit;
+
+  const filter = {
+    isVerified: true,
+    isBlocked: false,
+    isDeleted: false,
+  };
+  if (q?.trim()) {
+    filter.displayName = {
+      $regex: q.trim(),
+      $options: "i",
+    };
+  }
+
+  const [users, totalUsers] = await Promise.all([
+    User.find(filter, "_id displayName userName image bio")
+      .sort({ displayName: 1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
+
+    User.countDocuments(filter),
+  ]);
+
+  sendSuccessResponse({
+    res,
+    data: {
+      users,
+      pagination: {
+        currentPage: Number(page),
+        limit: Number(limit),
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+        hasNextPage: page * limit < totalUsers,
+        hasPreviousPage: page > 1,
+      },
+    },
+  });
+}
+
 export const updatePassword = async (req, res, next) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;
 

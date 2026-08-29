@@ -124,56 +124,25 @@ const ReplySchema = new mongoose.Schema(
 |--------------------------------------------------------------------------
 */
 
-ReplySchema.index({
-  message: 1,
-  parentReply: 1,
-  isDeleted: 1,
-  createdAt: -1,
-});
 
 ReplySchema.index({
   sender: 1,
   isDeleted: 1,
 });
 
+ReplySchema.index({
+  message: 1,
+  isDeleted: 1,
+  createdAt: 1,
+});
+
+ReplySchema.index({
+  parentReply: 1,
+  isDeleted: 1,
+  createdAt: 1,
+});
+
 const Reply = mongoose.models.Reply || mongoose.model("Reply", ReplySchema);
 
 export default Reply;
 
-// ReplySchema.pre("save", function (next) {
-//   if (!this.isModified("content")) {
-//     return next();
-//   }
-
-//   this.content = encrypt({
-//     plainText: this.content,
-//     secretKey: process.env.REPLY_CONTENT_SECRET,
-//   });
-
-//   next();
-// });
-
-// ReplySchema.post("find", function (docs) {
-//   docs.forEach((doc) => {
-//     if (doc?.content) {
-//       doc.content = decryptContent(doc.content);
-//     }
-//   });
-// });
-
-// ReplySchema.post("findOne", function (doc) {
-//   if (doc?.content) {
-//     doc.content = decryptContent(doc.content);
-//   }
-// });
-
-// ReplySchema.post("findOneAndUpdate", function (doc) {
-//   if (doc?.content) {
-//     doc.content = decryptContent(doc.content);
-//   }
-// });
-
-// const Reply =
-//   mongoose.models.Reply || mongoose.model("Reply", ReplySchema);
-
-// export default Reply;

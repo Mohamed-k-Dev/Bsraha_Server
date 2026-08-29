@@ -11,6 +11,7 @@ import {
   uploadProfileImage,
   uploadProfileImages,
   getPublicProfile,
+  searchUsers,
 } from "./Services/profile.service.js";
 import {
   ALLOWED_IMAGE_TYPES,
@@ -39,6 +40,8 @@ userRouter.get(
   validationMiddleware(getPublicProfileSchema),
   errorHandler(getPublicProfile)
 );
+
+userRouter.get("/search", errorHandler(searchUsers));
 
 userRouter.patch(
   "/update/password",
