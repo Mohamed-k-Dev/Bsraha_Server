@@ -9,9 +9,13 @@ import {
   canViewReplies,
 } from "../../../Utils/replyPermissions.utils.js";
 import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
-import { REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
+import {
+  NOTIFICATION_TYPES,
+  REACTION_TARGET_TYPES,
+} from "../../../Constants/Constants.js";
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
 import mongoose from "mongoose";
+import createNotification from "../../../Utils/createNotification.utils.js";
 
 async function isValidMongoId(id) {
   try {
@@ -171,6 +175,14 @@ export async function sendMessage(req, res, next) {
     receiver: receiver._id,
     content,
     isAnonymous,
+  });
+
+  await createNotification({
+    recipient: receiver._id,
+    sender: isAnonymous ? "anonymous" : sender.displayName,
+    type: NOTIFICATION_TYPES.MESSAGE_RECEIVED,
+    message: `sent you a message`,
+    messageId: message._id,
   });
   sendSuccessResponse({ res, data: { message } });
 }
@@ -356,6 +368,14 @@ export async function createMessageReply(req, res, next) {
     sender: user._id,
     content,
     isAnonymous,
+  });
+
+  await createNotification({
+    recipient: message.receiver,
+    sender: isAnonymous ? "anonymous" : user.displayName,
+    type: NOTIFICATION_TYPES.REPLY_RECEIVED,
+    message: `replied to your message: ${content}`,
+    messageId: message._id,
   });
 
   const responseReply = sanitizeSender(reply);

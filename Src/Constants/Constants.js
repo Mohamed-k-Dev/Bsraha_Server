@@ -34,3 +34,9 @@ export const REACTION_TARGET_TYPES = {
   MESSAGE: "message",
   REPLY: "reply",
 };
+
+export const NOTIFICATION_TYPES = {
+  MESSAGE_RECEIVED: "message_received",
+  REPLY_RECEIVED: "reply_received",
+  REACTION_RECEIVED: "reaction_received",
+};

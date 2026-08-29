@@ -3,6 +3,8 @@ import Reaction from "../../../DB/Models/Reaction.model.js";
 import getReactionTarget from "../../../Utils/getReactionTarget.utils.js";
 import updateReactionSummary from "../../../Utils/updateReactionSummary.utils.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import createNotification from "../../../Utils/createNotification.utils.js";
+import { NOTIFICATION_TYPES } from "../../../Constants/Constants.js";
 
 export async function reactToTarget(req, res, next) {
   const user = req.authUser;
@@ -20,6 +22,8 @@ export async function reactToTarget(req, res, next) {
       })
     );
   }
+
+
 
   const existingReaction = await Reaction.findOne({
     user: user._id,
@@ -113,6 +117,15 @@ export async function reactToTarget(req, res, next) {
   const updatedTarget = await getReactionTarget({
     targetId,
     targetType,
+  });
+
+
+  await createNotification({
+    recipient: target.receiver,
+    sender: user.displayName,
+    type: NOTIFICATION_TYPES.REACTION_RECEIVED,
+    message: `reacted ${type} to your ${targetType}`,
+    messageId: targetId,
   });
 
   sendSuccessResponse({

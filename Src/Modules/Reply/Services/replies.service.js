@@ -1,7 +1,8 @@
-import { REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
+import { NOTIFICATION_TYPES, REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
 import Messages from "../../../DB/Models/Messages.model.js";
 import Reply from "../../../DB/Models/Reply.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import createNotification from "../../../Utils/createNotification.utils.js";
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
 import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
 import getPagination from "../../../Utils/getPagination.utils.js";
@@ -47,6 +48,14 @@ export async function createReplyReply(req, res, next) {
     sender: user._id,
     content,
     isAnonymous,
+  });
+
+  await createNotification({
+    recipient: parentReply.sender,
+    sender: isAnonymous ? "anonymous" : user.displayName,
+    type: NOTIFICATION_TYPES.REPLY_RECEIVED,
+    message: `replied to your reply in "${content}"`,
+    messageId: message._id,
   });
 
   const responseReply = sanitizeSender(reply);
