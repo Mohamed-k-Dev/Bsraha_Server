@@ -16,6 +16,7 @@ import {
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
 import mongoose from "mongoose";
 import createNotification from "../../../Utils/createNotification.utils.js";
+import { areUsersBlocked } from "../../../Utils/areUsersBlocked.utils.js";
 
 async function isValidMongoId(id) {
   try {
@@ -87,10 +88,20 @@ export async function getMyMessages(req, res, next) {
 
 export async function getPublicMessages(req, res, next) {
   const { displayName } = req.params;
+  const loggedInUser = req.authUser;
 
   const user = await isActiveUser(displayName);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
+  }
+
+  const blocked = await areUsersBlocked(loggedInUser._id, user._id);
+  if (blocked) {
+    return next(
+      new Error("You cannot see a messages to this user", {
+        cause: 403,
+      })
+    );
   }
 
   const messages = await Messages.find({
@@ -166,6 +177,15 @@ export async function sendMessage(req, res, next) {
     return next(
       new Error("You cannot send a message to yourself", {
         cause: 400,
+      })
+    );
+  }
+
+  const blocked = await areUsersBlocked(sender._id, receiver._id);
+  if (blocked) {
+    return next(
+      new Error("You cannot send a message to this user", {
+        cause: 403,
       })
     );
   }
@@ -354,6 +374,15 @@ export async function createMessageReply(req, res, next) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
+  const blocked = await areUsersBlocked(user._id, message.receiver);
+  if (blocked) {
+    return next(
+      new Error("You cannot send a message to this user", {
+        cause: 403,
+      })
+    );
+  }
+
   if (!canReplyToMessage(message, user._id)) {
     return next(
       new Error("You are not allowed to reply to this message", {
@@ -400,6 +429,15 @@ export async function getMessageReplies(req, res, next) {
   });
   if (!message) {
     return next(new Error("Message not found", { cause: 404 }));
+  }
+
+  const blocked = await areUsersBlocked(user._id, message.sender);
+  if (blocked) {
+    return next(
+      new Error("You cannot send a message to this user", {
+        cause: 403,
+      })
+    );
   }
 
   if (!canViewReplies(message, user._id)) {

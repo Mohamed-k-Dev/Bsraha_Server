@@ -40,3 +40,26 @@ export const NOTIFICATION_TYPES = {
   REPLY_RECEIVED: "reply_received",
   REACTION_RECEIVED: "reaction_received",
 };
+
+export const REPORT_TARGET_TYPES = {
+  USER: "user",
+  MESSAGE: "message",
+  REPLY: "reply",
+};
+
+export const REPORT_REASONS = {
+  SPAM: "spam",
+  HARASSMENT: "harassment",
+  HATE_SPEECH: "hate_speech",
+  SEXUAL_CONTENT: "sexual_content",
+  THREATS: "threats",
+  IMPERSONATION: "impersonation",
+  OTHER: "other",
+};
+
+export const REPORT_STATUS = {
+  PENDING: "pending",
+  REVIEWING: "reviewing",
+  RESOLVED: "resolved",
+  REJECTED: "rejected",
+};

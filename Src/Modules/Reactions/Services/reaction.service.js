@@ -5,6 +5,7 @@ import updateReactionSummary from "../../../Utils/updateReactionSummary.utils.js
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 import createNotification from "../../../Utils/createNotification.utils.js";
 import { NOTIFICATION_TYPES } from "../../../Constants/Constants.js";
+import { areUsersBlocked } from "../../../Utils/areUsersBlocked.utils.js";
 
 export async function reactToTarget(req, res, next) {
   const user = req.authUser;
@@ -23,7 +24,14 @@ export async function reactToTarget(req, res, next) {
     );
   }
 
-
+  const blocked = await areUsersBlocked(user._id, target.receiver);
+  if (blocked) {
+    return next(
+      new Error("You cannot send a reaction to this user", {
+        cause: 403,
+      })
+    );
+  }
 
   const existingReaction = await Reaction.findOne({
     user: user._id,
@@ -118,7 +126,6 @@ export async function reactToTarget(req, res, next) {
     targetId,
     targetType,
   });
-
 
   await createNotification({
     recipient: target.receiver,

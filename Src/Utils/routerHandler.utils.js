@@ -6,6 +6,7 @@ import { messageRouter } from "../Modules/Messages/messages.controller.js";
 import { replyRouter } from "../Modules/Reply/replies.controller.js";
 import { reactionRouter } from "../Modules/Reactions/reaction.controller.js";
 import { notificationRouter } from "../Modules/Notifications/notification.controller.js";
+import { blockRouter } from "../Modules/Blocks/block.controller.js";
 
 export default function routerHandler(app, express, corsOptions) {
   app.use(cors(corsOptions));
@@ -17,5 +18,6 @@ export default function routerHandler(app, express, corsOptions) {
   app.use("/api/v1/reply", replyRouter);
   app.use("/api/v1/reaction", reactionRouter);
   app.use("/api/v1/notification", notificationRouter);
+  app.use("/api/v1/block", blockRouter);
   app.use(globalErrorHandler);
 }

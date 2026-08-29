@@ -2,6 +2,7 @@ import { NOTIFICATION_TYPES, REACTION_TARGET_TYPES } from "../../../Constants/Co
 import Messages from "../../../DB/Models/Messages.model.js";
 import Reply from "../../../DB/Models/Reply.model.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
+import { areUsersBlocked } from "../../../Utils/areUsersBlocked.utils.js";
 import createNotification from "../../../Utils/createNotification.utils.js";
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
 import { getMyReactionsMap } from "../../../Utils/getMyReaction.utils.js";
@@ -24,6 +25,15 @@ export async function createReplyReply(req, res, next) {
   });
   if (!parentReply) {
     return next(new Error("Reply not found", { cause: 404 }));
+  }
+
+  const blocked = await areUsersBlocked(user._id, parentReply.sender);
+  if (blocked) {
+    return next(
+      new Error("You cannot reply to this user", {
+        cause: 403,
+      })
+    );
   }
 
   const message = await Messages.findOne({
