@@ -12,6 +12,7 @@ import { reportRouter } from "../Modules/Reports/report.controller.js";
 export default function routerHandler(app, express, corsOptions) {
   app.use(cors(corsOptions));
   app.use(express.json());
+  app.get("/", (req, res) => res.send("Bsraha is working successfully !"));
   app.use("/Assets", express.static("Assets"));
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/user", userRouter);
