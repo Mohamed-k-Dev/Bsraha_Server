@@ -113,6 +113,14 @@ export const signUpWithGmail = async (req, res, next) => {
     return next(new Error("User already exist", { cause: 409 }));
   }
 
+   const isDisplayNameExist = await User.findOne({
+    displayName: `${name}@Bsraha`,
+  });
+  if (isDisplayNameExist) {
+    return next(new Error("User already exist", { cause: 409 }));
+  }
+
+
   const payload = await User.create({
     email,
     userName: name,
