@@ -116,6 +116,7 @@ export const signUpWithGmail = async (req, res, next) => {
   const payload = await User.create({
     email,
     userName: name,
+        displayName: `${name}@Bsraha`,
     provider: SYSTEM_PROVIDERS.GOOGLE,
     isVerified: true,
     password: await hashData(uuidv4(), +process.env.SALT),
