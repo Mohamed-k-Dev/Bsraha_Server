@@ -27,7 +27,13 @@ const corsOptions = {
 
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 
-  allowedHeaders: ["Content-Type", "Authorization", "refreshToken"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "accessToken",
+    "accesstoken",
+    "refreshToken",
+  ],
 };
 
 routerHandler(app, express, corsOptions);
