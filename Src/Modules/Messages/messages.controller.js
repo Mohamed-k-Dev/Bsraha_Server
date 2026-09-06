@@ -7,6 +7,7 @@ import {
   getMessageReplies,
   getMyMessages,
   getPublicMessages,
+  getUserStats,
   publishMessage,
   sendMessage,
   unpublishMessage,
@@ -81,4 +82,10 @@ messageRouter.get(
   validationMiddleware(getRepliesSchema),
   authenticationMiddleware,
   errorHandler(getMessageReplies)
+);
+
+messageRouter.get(
+  "/stats/overview",
+  authenticationMiddleware,
+  errorHandler(getUserStats)
 );

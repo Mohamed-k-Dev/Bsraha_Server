@@ -497,3 +497,58 @@ export async function getMessageReplies(req, res, next) {
     },
   });
 }
+
+export async function getUserStats(req, res, next) {
+  const userId = req.authUser._id;
+
+  // 1. Run independent counts concurrently
+  const [totalMessagesReceived, publicMessages, sentMessages, userMessages] =
+    await Promise.all([
+      Messages.countDocuments({ receiver: userId, isDeleted: false }),
+      Messages.countDocuments({
+        receiver: userId,
+        isPublic: true,
+        isDeleted: false,
+      }),
+      Messages.countDocuments({ sender: userId, isDeleted: false }),
+      // Fetch only _id and reactionSummary to minimize RAM usage
+      Messages.find({ receiver: userId, isDeleted: false })
+        .select("_id reactionSummary")
+        .lean(),
+    ]);
+
+  const messageIds = userMessages.map((msg) => msg._id);
+
+  // 2. Get total replies directed at this user's messages
+  const totalReplies = await Reply.countDocuments({
+    message: { $in: messageIds },
+    isDeleted: false,
+  });
+
+  // 3. Calculate total reactions across all received messages
+  let totalReactions = 0;
+  userMessages.forEach((msg) => {
+    if (msg.reactionSummary) {
+      // Assuming reactionSummary is an object/map (e.g., { like: 5, love: 2 })
+      Object.values(msg.reactionSummary).forEach((count) => {
+        if (typeof count === "number") {
+          totalReactions += count;
+        }
+      });
+    }
+  });
+
+  sendSuccessResponse({
+    res,
+    message: "User statistics fetched successfully",
+    data: {
+      stats: {
+        totalMessagesReceived,
+        publicMessages,
+        sentMessages,
+        totalReplies,
+        totalReactions,
+      },
+    },
+  });
+}
