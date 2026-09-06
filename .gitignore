@@ -1,5 +1,5 @@
 /node_modules
-/src/Config
+/src/Config/.dev.env
 /Assets/users
 /Assets/generalImages
 /token.text

@@ -9,7 +9,7 @@ config({ path: path.resolve("Src/Config/.dev.env") });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = process.env.ORIGIN_WHITE_LIST || [];
+const allowedOrigins = process.env.FE_ORIGIN || "http://localhost:5174";
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) {
@@ -36,7 +36,9 @@ export default function bootstrapFunction() {
   connectDB();
   app
     .listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(
+        `Server is running on port ${PORT} and on host ${process.env.FE_ORIGIN}`
+      );
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {
