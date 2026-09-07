@@ -127,7 +127,7 @@ export async function reactToTarget(req, res, next) {
     targetType,
   });
 
-  await createNotification({
+  createNotification({
     recipient: target.receiver,
     sender: user.displayName,
     type: NOTIFICATION_TYPES.REACTION_RECEIVED,
