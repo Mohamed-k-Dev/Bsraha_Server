@@ -26,53 +26,59 @@ async function isValidMongoId(id) {
   }
 }
 
+
+// 1. Updated getMyMessages with Server-Side Pagination & Filtering
 export async function getMyMessages(req, res, next) {
   const user = req.authUser;
-  const messages = await Messages.find({
-    receiver: user._id,
-    isDeleted: false,
-  })
-    .populate("sender", "_id userName displayName image")
-    .sort({ createdAt: -1 })
-    .lean();
 
+  // Extract pagination and filters from query
+  const { page, limit = 10, skip } = getPagination(req.query);
+  const { filter } = req.query;
+
+  // Build the MongoDB query dynamically
+  const query = { receiver: user._id, isDeleted: false };
+
+  if (filter === "public") query.isPublic = true;
+  if (filter === "private") query.isPublic = false;
+  if (filter === "anonymous") query.isAnonymous = true;
+  if (filter === "identified") query.isAnonymous = false;
+
+  // Run data fetch and count concurrently for performance
+  const [messages, total] = await Promise.all([
+    Messages.find(query)
+      .populate("sender", "_id userName displayName image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Messages.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
   const messageIds = messages.map((message) => message._id);
+
+  // Fetch reactions map
   const myReactionsMap = await getMyReactionsMap({
     userId: user._id,
     targetIds: messageIds,
     targetType: REACTION_TARGET_TYPES.MESSAGE,
   });
 
+  // Fetch replies count map
   const repliesCount = await Reply.aggregate([
-    {
-      $match: {
-        message: {
-          $in: messageIds,
-        },
-        isDeleted: false,
-      },
-    },
-    {
-      $group: {
-        _id: "$message",
-        count: {
-          $sum: 1,
-        },
-      },
-    },
+    { $match: { message: { $in: messageIds }, isDeleted: false } },
+    { $group: { _id: "$message", count: { $sum: 1 } } },
   ]);
-
   const repliesCountMap = new Map(
     repliesCount.map((item) => [item._id.toString(), item.count])
   );
 
+  // Format messages
   const formattedMessages = messages.map((message) => {
     const myReaction = myReactionsMap.get(message._id.toString()) || null;
-
     const formattedMessage = {
       ...message,
       reactions: formatReactionSummary(message.reactionSummary, myReaction),
-
       repliesCount: repliesCountMap.get(message._id.toString()) || 0,
     };
     return sanitizeSender(formattedMessage);
@@ -82,9 +88,69 @@ export async function getMyMessages(req, res, next) {
     res,
     data: {
       messages: formattedMessages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
     },
   });
 }
+
+// 2. New Controller: Fetch Single Message by ID
+export async function getSingleMessage(req, res, next) {
+  const { messageId } = req.params;
+  const user = req.authUser;
+
+  const message = await Messages.findOne({ _id: messageId, isDeleted: false })
+    .populate("sender", "_id userName displayName image")
+    .lean();
+
+  if (!message) {
+    return next(new Error("Message not found", { cause: 404 }));
+  }
+
+  // Ensure user has permission to view this message
+  if (
+    message.receiver.toString() !== user._id.toString() &&
+    !message.isPublic
+  ) {
+    return next(
+      new Error("You do not have permission to view this message", {
+        cause: 403,
+      })
+    );
+  }
+
+  const myReactionsMap = await getMyReactionsMap({
+    userId: user._id,
+    targetIds: [message._id],
+    targetType: REACTION_TARGET_TYPES.MESSAGE,
+  });
+
+  const repliesCount = await Reply.countDocuments({
+    message: message._id,
+    isDeleted: false,
+  });
+
+  const formattedMessage = sanitizeSender({
+    ...message,
+    reactions: formatReactionSummary(
+      message.reactionSummary,
+      myReactionsMap.get(message._id.toString()) || null
+    ),
+    repliesCount,
+  });
+
+  sendSuccessResponse({
+    res,
+    data: { message: formattedMessage },
+  });
+}
+
 
 export async function getPublicMessages(req, res, next) {
   const { displayName } = req.params;

@@ -7,6 +7,7 @@ import {
   getMessageReplies,
   getMyMessages,
   getPublicMessages,
+  getSingleMessage,
   getUserStats,
   publishMessage,
   sendMessage,
@@ -27,6 +28,8 @@ import {
 export const messageRouter = Router();
 
 messageRouter.get("/", authenticationMiddleware, errorHandler(getMyMessages));
+
+messageRouter.get("/:messageId", authenticationMiddleware, errorHandler(getSingleMessage));
 
 messageRouter.get(
   "/public/:displayName",
