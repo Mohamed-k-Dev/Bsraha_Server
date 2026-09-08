@@ -26,16 +26,13 @@ async function isValidMongoId(id) {
   }
 }
 
-
-// 1. Updated getMyMessages with Server-Side Pagination & Filtering
 export async function getMyMessages(req, res, next) {
   const user = req.authUser;
 
-  // Extract pagination and filters from query
   const { page, limit = 10, skip } = getPagination(req.query);
   const { filter } = req.query;
 
-  // Build the MongoDB query dynamically
+  // Build MongoDB query dynamically based on selected filter tab
   const query = { receiver: user._id, isDeleted: false };
 
   if (filter === "public") query.isPublic = true;
@@ -43,7 +40,7 @@ export async function getMyMessages(req, res, next) {
   if (filter === "anonymous") query.isAnonymous = true;
   if (filter === "identified") query.isAnonymous = false;
 
-  // Run data fetch and count concurrently for performance
+  // Fetch paginated data and total count concurrently
   const [messages, total] = await Promise.all([
     Messages.find(query)
       .populate("sender", "_id userName displayName image")
@@ -57,14 +54,13 @@ export async function getMyMessages(req, res, next) {
   const totalPages = Math.ceil(total / limit);
   const messageIds = messages.map((message) => message._id);
 
-  // Fetch reactions map
+  // Fetch reactions and reply counts
   const myReactionsMap = await getMyReactionsMap({
     userId: user._id,
     targetIds: messageIds,
     targetType: REACTION_TARGET_TYPES.MESSAGE,
   });
 
-  // Fetch replies count map
   const repliesCount = await Reply.aggregate([
     { $match: { message: { $in: messageIds }, isDeleted: false } },
     { $group: { _id: "$message", count: { $sum: 1 } } },
@@ -99,7 +95,6 @@ export async function getMyMessages(req, res, next) {
     },
   });
 }
-
 // 2. New Controller: Fetch Single Message by ID
 export async function getSingleMessage(req, res, next) {
   const { messageId } = req.params;
@@ -150,7 +145,6 @@ export async function getSingleMessage(req, res, next) {
     data: { message: formattedMessage },
   });
 }
-
 
 export async function getPublicMessages(req, res, next) {
   const { displayName } = req.params;
