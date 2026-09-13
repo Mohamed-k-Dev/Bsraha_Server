@@ -4,8 +4,9 @@ import getReactionTarget from "../../../Utils/getReactionTarget.utils.js";
 import updateReactionSummary from "../../../Utils/updateReactionSummary.utils.js";
 import { sendSuccessResponse } from "../../../Utils/ApiResponse.js";
 import createNotification from "../../../Utils/createNotification.utils.js";
-import { NOTIFICATION_TYPES } from "../../../Constants/Constants.js";
+import { NOTIFICATION_TYPES, REACTION_TARGET_TYPES } from "../../../Constants/Constants.js";
 import { areUsersBlocked } from "../../../Utils/areUsersBlocked.utils.js";
+import Messages from "../../../DB/Models/Messages.model.js";
 
 export async function reactToTarget(req, res, next) {
   const user = req.authUser;
@@ -24,7 +25,7 @@ export async function reactToTarget(req, res, next) {
     );
   }
 
-  const blocked = await areUsersBlocked(user._id, target.receiver);
+  const blocked = await areUsersBlocked(user._id, target.receiver || user._id);
   if (blocked) {
     return next(
       new Error("You cannot send a reaction to this user", {
@@ -127,8 +128,14 @@ export async function reactToTarget(req, res, next) {
     targetType,
   });
 
+  let messageReceiver = null;
+
+  if (targetType === REACTION_TARGET_TYPES.REPLY) {
+     messageReceiver = await Messages.findOne({ _id: target.message });
+  }
+
   createNotification({
-    recipient: target.receiver,
+    recipient: target.receiver || messageReceiver?.receiver,
     sender: user.displayName,
     type: NOTIFICATION_TYPES.REACTION_RECEIVED,
     message: `reacted ${type} to your ${targetType}`,
