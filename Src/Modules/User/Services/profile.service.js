@@ -31,7 +31,7 @@ export const getPublicProfile = async (req, res, next) => {
     isBlocked: false,
     isDeleted: false,
   })
-    .select("_id displayName userName image bio")
+    .select("_id displayName userName image bio phone email gender age coverImages")
     .lean();
   if (!user) {
     return next(
