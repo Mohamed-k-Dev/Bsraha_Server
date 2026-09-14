@@ -94,6 +94,11 @@ export const getPublicProfile = async (req, res, next) => {
         displayName: user.displayName,
         image: user.image,
         bio: user.bio,
+        phone: user.phone,
+        email: user.email,
+        gender: user.gender,
+        age: user.age,
+        coverImages: user.coverImages,
       },
       messages: formattedMessages,
       pagination: {
