@@ -31,6 +31,12 @@ export const messageRouter = Router();
 messageRouter.get("/", authenticationMiddleware, errorHandler(getMyMessages));
 
 messageRouter.get(
+  "/sent",
+  authenticationMiddleware,
+  errorHandler(getSentMessages)
+);
+
+messageRouter.get(
   "/:messageId",
   authenticationMiddleware,
   errorHandler(getSingleMessage)
@@ -96,10 +102,4 @@ messageRouter.get(
   "/stats/overview",
   authenticationMiddleware,
   errorHandler(getUserStats)
-);
-
-messageRouter.get(
-  "/sent",
-  authenticationMiddleware,
-  errorHandler(getSentMessages)
 );
