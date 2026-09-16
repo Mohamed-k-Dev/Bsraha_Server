@@ -8,6 +8,7 @@ import uploadImage, {
 } from "../../../Service/cloudinary.service.js";
 import Messages from "../../../DB/Models/Messages.model.js";
 import { formatReactionSummary } from "../../../Utils/formatReactionSummary.js";
+import { encryptPhone } from "../../../Utils/decryptPhone.js";
 
 export const getProfile = async (req, res, next) => {
   const user = req.authUser;
@@ -191,7 +192,7 @@ export const updateProfile = async (req, res) => {
       userName: userName || user.userName,
       gender: gender || user.gender,
       age: age || user.age,
-      phone: phone || user.phone,
+      phone: phone ? encryptPhone(phone) : user.phone,
       displayName: displayName || user.displayName,
     },
     {
