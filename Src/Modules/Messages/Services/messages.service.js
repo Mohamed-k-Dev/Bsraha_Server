@@ -626,8 +626,14 @@ export async function getUserStats(req, res, next) {
 export async function getSentMessages(req, res, next) {
   const user = req.authUser;
   const { page, limit = 10, skip } = getPagination(req.query);
+  const { filter } = req.query;
 
+  // Query where the logged-in user is the SENDER
   const query = { sender: user._id, isDeleted: false };
+
+  // Apply filters
+  if (filter === "anonymous") query.isAnonymous = true;
+  if (filter === "identified") query.isAnonymous = false;
 
   const [messages, total] = await Promise.all([
     Messages.find(query)
@@ -656,7 +662,6 @@ export async function getSentMessages(req, res, next) {
     repliesCount.map((item) => [item._id.toString(), item.count])
   );
 
-  // Format messages
   const formattedMessages = messages.map((message) => {
     const myReaction = myReactionsMap.get(message._id.toString()) || null;
     return {
