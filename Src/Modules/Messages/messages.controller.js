@@ -7,6 +7,7 @@ import {
   getMessageReplies,
   getMyMessages,
   getPublicMessages,
+  getSentMessages,
   getSingleMessage,
   getUserStats,
   publishMessage,
@@ -29,7 +30,11 @@ export const messageRouter = Router();
 
 messageRouter.get("/", authenticationMiddleware, errorHandler(getMyMessages));
 
-messageRouter.get("/:messageId", authenticationMiddleware, errorHandler(getSingleMessage));
+messageRouter.get(
+  "/:messageId",
+  authenticationMiddleware,
+  errorHandler(getSingleMessage)
+);
 
 messageRouter.get(
   "/public/:displayName",
@@ -91,4 +96,10 @@ messageRouter.get(
   "/stats/overview",
   authenticationMiddleware,
   errorHandler(getUserStats)
+);
+
+messageRouter.get(
+  "/sent",
+  authenticationMiddleware,
+  errorHandler(getSentMessages)
 );

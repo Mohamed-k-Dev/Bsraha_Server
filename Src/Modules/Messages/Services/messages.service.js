@@ -622,3 +622,67 @@ export async function getUserStats(req, res, next) {
     },
   });
 }
+
+export async function getSentMessages(req, res, next) {
+  const user = req.authUser;
+  const { page, limit = 10, skip } = getPagination(req.query);
+
+  // Query where the logged-in user is the SENDER
+  const query = { sender: user._id, isDeleted: false };
+
+  // Fetch paginated data and total count concurrently
+  const [messages, total] = await Promise.all([
+    Messages.find(query)
+      // Populate receiver to know who the message was sent to
+      .populate("receiver", "_id userName displayName image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Messages.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+  const messageIds = messages.map((message) => message._id);
+
+  // Fetch reactions map (so the sender can see if they reacted to their own sent message)
+  const myReactionsMap = await getMyReactionsMap({
+    userId: user._id,
+    targetIds: messageIds,
+    targetType: REACTION_TARGET_TYPES.MESSAGE,
+  });
+
+  // Fetch reply counts for these sent messages
+  const repliesCount = await Reply.aggregate([
+    { $match: { message: { $in: messageIds }, isDeleted: false } },
+    { $group: { _id: "$message", count: { $sum: 1 } } },
+  ]);
+  const repliesCountMap = new Map(
+    repliesCount.map((item) => [item._id.toString(), item.count])
+  );
+
+  // Format messages
+  const formattedMessages = messages.map((message) => {
+    const myReaction = myReactionsMap.get(message._id.toString()) || null;
+    return {
+      ...message,
+      reactions: formatReactionSummary(message.reactionSummary, myReaction),
+      repliesCount: repliesCountMap.get(message._id.toString()) || 0,
+    };
+  });
+
+  sendSuccessResponse({
+    res,
+    data: {
+      messages: formattedMessages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    },
+  });
+}
