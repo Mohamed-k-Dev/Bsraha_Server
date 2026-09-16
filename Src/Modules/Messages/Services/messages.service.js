@@ -95,7 +95,8 @@ export async function getMyMessages(req, res, next) {
     },
   });
 }
-// 2. New Controller: Fetch Single Message by ID
+
+// 2. Updated Controller: Fetch Single Message by ID (Allows Sender and Receiver to view)
 export async function getSingleMessage(req, res, next) {
   const { messageId } = req.params;
   const user = req.authUser;
@@ -108,15 +109,22 @@ export async function getSingleMessage(req, res, next) {
     return next(new Error("Message not found", { cause: 404 }));
   }
 
-  // Ensure user has permission to view this message
-  // make the receiver and sender can view the message
-  if (
-    (message.receiver.toString() !== user._id.toString() ||
-      message.sender.toString() !== user._id.toString()) &&
-    !message.isPublic
-  ) {
+  // Safely extract IDs for permission checks
+  const receiverId = message.receiver?.toString();
+  const senderId =
+    message.sender?._id?.toString() ||
+    (typeof message.sender === "string"
+      ? message.sender
+      : message.sender?.toString());
+  const userId = user._id.toString();
+
+  const isReceiver = receiverId === userId;
+  const isSender = senderId === userId;
+
+  // Ensure user has permission (Public OR Receiver OR Sender)
+  if (!message.isPublic && !isReceiver && !isSender) {
     return next(
-      new Error("You do not have permission to view this message", {
+      new Error("You are not allowed to view these message", {
         cause: 403,
       })
     );
