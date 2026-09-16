@@ -183,7 +183,7 @@ export const updatePassword = async (req, res, next) => {
 
 export const updateProfile = async (req, res) => {
   const user = req.authUser;
-  const { userName, gender, age, address, phone, birthDate } = req.body;
+  const { userName, displayName, gender, age, phone } = req.body;
 
   const updatedUser = await User.findByIdAndUpdate(
     user._id,
@@ -191,16 +191,17 @@ export const updateProfile = async (req, res) => {
       userName: userName || user.userName,
       gender: gender || user.gender,
       age: age || user.age,
-      address: address || user.address,
       phone: phone || user.phone,
-      birthDate: birthDate || user.birthDate,
+      displayName: displayName || user.displayName,
     },
     {
       new: true,
       runValidators: true,
     }
   );
-
+  if (!updatedUser) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
   sendSuccessResponse({
     res,
     message: "Profile updated successfully",
