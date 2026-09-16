@@ -628,10 +628,8 @@ export async function getSentMessages(req, res, next) {
   const { page, limit = 10, skip } = getPagination(req.query);
   const { filter } = req.query;
 
-  // Query where the logged-in user is the SENDER
   const query = { sender: user._id, isDeleted: false };
 
-  // Apply filters
   if (filter === "anonymous") query.isAnonymous = true;
   if (filter === "identified") query.isAnonymous = false;
 
