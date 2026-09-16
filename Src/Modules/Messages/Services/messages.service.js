@@ -109,8 +109,10 @@ export async function getSingleMessage(req, res, next) {
   }
 
   // Ensure user has permission to view this message
+  // make the receiver and sender can view the message
   if (
-    message.receiver.toString() !== user._id.toString() &&
+    (message.receiver.toString() !== user._id.toString() ||
+      message.sender.toString() !== user._id.toString()) &&
     !message.isPublic
   ) {
     return next(
